@@ -61,7 +61,7 @@ go install
 3. Select file:
    - Navigate through available files using arrow keys
    - For encryption: shows all non-encrypted files
-   - For decryption: shows only `.enc` files
+   - For decryption: shows only `.encrypted` files
 
 The program will process the selected file and display progress in real-time.
 
@@ -122,11 +122,6 @@ GOOS=linux GOARCH=amd64 go build -o hexwarden
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- Uses [progressbar](https://github.com/schollz/progressbar) for progress tracking
-- Uses [survey](https://github.com/AlecAivazis/survey) for interactive CLI
 
 ## Security Notice
 
