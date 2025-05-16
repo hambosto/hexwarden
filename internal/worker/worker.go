@@ -8,7 +8,6 @@ import (
 
 	"github.com/hambosto/hexwarden/internal/processor"
 	"github.com/hambosto/hexwarden/internal/ui"
-	"github.com/schollz/progressbar/v3"
 )
 
 const (
@@ -34,7 +33,7 @@ type TaskResult struct {
 
 type Worker struct {
 	processor   *processor.ChunkProcessor
-	progress    *progressbar.ProgressBar
+	spinner     *ui.Spinner
 	concurrency int
 }
 
@@ -86,14 +85,6 @@ func (w *Worker) setProgress(size int64) {
 		label = "Decrypting..."
 	}
 
-	w.progress = progressbar.NewOptions64(
-		size,
-		progressbar.OptionSetDescription(label),
-		progressbar.OptionUseANSICodes(false),
-		progressbar.OptionEnableColorCodes(true),
-		progressbar.OptionShowBytes(true),
-		progressbar.OptionShowElapsedTimeOnFinish(),
-		progressbar.OptionFullWidth(),
-		progressbar.OptionSetTheme(progressbar.ThemeUnicode),
-	)
+	w.spinner = ui.NewSpinner(ui.DefaultConfig(size, label))
+	w.spinner.Start()
 }
