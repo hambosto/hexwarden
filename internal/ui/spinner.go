@@ -98,7 +98,7 @@ type model struct {
 
 func newModel(cfg Config, progressCh chan ProgressMsg) model {
 	s := spinner.New(
-		spinner.WithSpinner(spinner.Dot),
+		spinner.WithSpinner(spinner.MiniDot),
 		spinner.WithStyle(cfg.Style.Spinner),
 	)
 

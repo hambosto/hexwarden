@@ -67,7 +67,7 @@ The program will process the selected file and display progress in real-time.
 
 ### Encrypted File Format
 
-- Encrypted files are saved with the `.enc` extension
+- Encrypted files are saved with the `.encrypted` extension
 - Original filename is preserved when decrypting
 - Files are processed in chunks for efficient memory usage
 
