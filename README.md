@@ -1,4 +1,4 @@
-# HexWarden
+# hexwarden
 
 A secure and efficient file encryption tool written in Go that implements encryption with parallel processing capabilities.
 

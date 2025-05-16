@@ -67,7 +67,9 @@ func (w *Worker) Process(input io.Reader, output io.Writer, totalSize int64) err
 		return ErrNilStream
 	}
 
-	w.setProgress(totalSize)
+	if err := w.setProgress(totalSize); err != nil {
+		return fmt.Errorf("setting progress: %w", err)
+	}
 	return w.runPipeline(input, output)
 }
 
@@ -79,12 +81,16 @@ func (w *Worker) SetCipherNonce(nonce []byte) error {
 	return w.processor.Cipher.SetNonce(nonce)
 }
 
-func (w *Worker) setProgress(size int64) {
+func (w *Worker) setProgress(size int64) error {
 	label := "Encrypting..."
 	if w.processor.ProcessingMode != ui.ModeEncrypt {
 		label = "Decrypting..."
 	}
 
 	w.spinner = ui.NewSpinner(ui.DefaultConfig(size, label))
-	w.spinner.Start()
+	if err := w.spinner.Start(); err != nil {
+		return fmt.Errorf("starting spinner: %w", err)
+	}
+
+	return nil
 }
