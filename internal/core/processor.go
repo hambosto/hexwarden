@@ -182,7 +182,7 @@ func (p *Processor) decryptFile(process Process) error {
 }
 
 func (p *Processor) performEncryption(source *os.File, dest *os.File, sourceInfo os.FileInfo, key []byte, salt []byte) error {
-	processor, err := worker.New(key, ui.ModeEncrypt)
+	processor, err := worker.New(key, worker.Encryption)
 	if err != nil {
 		return fmt.Errorf("encryption setup failed: %w", err)
 	}
@@ -209,7 +209,7 @@ func (p *Processor) performEncryption(source *os.File, dest *os.File, sourceInfo
 }
 
 func (p *Processor) performDecryption(source *os.File, dest *os.File, key []byte, fileHeader header.Header) error {
-	processor, err := worker.New(key, ui.ModeDecrypt)
+	processor, err := worker.New(key, worker.Decryption)
 	if err != nil {
 		return fmt.Errorf("decryption setup failed: %w", err)
 	}

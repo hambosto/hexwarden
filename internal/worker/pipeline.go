@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"io"
 	"sync"
-
-	"github.com/hambosto/hexwarden/internal/ui"
 )
 
 func (w *Worker) runPipeline(r io.Reader, wr io.Writer) error {
@@ -37,7 +35,7 @@ func (w *Worker) setTasks(
 	r io.Reader,
 	tasks chan<- Task,
 ) error {
-	if w.processor.ProcessingMode == ui.ModeEncrypt {
+	if w.processing == Encryption {
 		return w.readForEncryption(r, tasks)
 	}
 	return w.readForDecryption(r, tasks)
@@ -54,11 +52,22 @@ func (w *Worker) worker(
 
 func (w *Worker) processTasks(tasks <-chan Task, results chan<- TaskResult) {
 	for t := range tasks {
-		output, err := w.processor.ProcessChunk(t.Data)
+		var (
+			output []byte
+			err    error
+		)
+
+		if w.processing == Encryption {
+			output, err = w.processor.Encryption(t.Data)
+		} else {
+			output, err = w.processor.Decryption(t.Data)
+		}
+
 		size := len(t.Data)
-		if w.processor.ProcessingMode != ui.ModeEncrypt {
+		if w.processing != Encryption {
 			size = len(output)
 		}
+
 		results <- TaskResult{
 			Index: t.Index,
 			Data:  output,

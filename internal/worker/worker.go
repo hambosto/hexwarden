@@ -14,6 +14,13 @@ const (
 	DefaultChunkSize = 1024 * 1024
 )
 
+type Processing int
+
+const (
+	Encryption Processing = iota
+	Decryption
+)
+
 var (
 	ErrInvalidKey = errors.New("key must be 64 bytes")
 	ErrNilStream  = errors.New("input and output streams must not be nil")
@@ -35,14 +42,15 @@ type Worker struct {
 	processor   *processor.ChunkProcessor
 	spinner     *ui.Spinner
 	concurrency int
+	processing  Processing
 }
 
-func New(key []byte, processingMode ui.ProcessorMode) (*Worker, error) {
+func New(key []byte, processing Processing) (*Worker, error) {
 	if len(key) != 64 {
 		return nil, ErrInvalidKey
 	}
 
-	p, err := processor.NewChunkProcessor(key, processingMode)
+	p, err := processor.NewChunkProcessor(key)
 	if err != nil {
 		return nil, fmt.Errorf("creating chunk processor: %w", err)
 	}
@@ -52,6 +60,7 @@ func New(key []byte, processingMode ui.ProcessorMode) (*Worker, error) {
 	return &Worker{
 		processor:   p,
 		concurrency: concurrency,
+		processing:  processing,
 	}, nil
 }
 
@@ -83,7 +92,7 @@ func (w *Worker) SetCipherNonce(nonce []byte) error {
 
 func (w *Worker) setProgress(size int64) error {
 	label := "Encrypting..."
-	if w.processor.ProcessingMode != ui.ModeEncrypt {
+	if w.processing != Encryption {
 		label = "Decrypting..."
 	}
 

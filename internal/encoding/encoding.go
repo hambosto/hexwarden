@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	headerSize = 4       // Size of the length header in bytes
-	maxDataLen = 1 << 30 // 1GB maximum data size
+	headerSize = 4
+	maxDataLen = 1 << 30
 )
 
 var (
@@ -51,11 +51,7 @@ func (e *Encoding) Encode(data []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	dataWithHeader, err := e.appendHeader(data)
-	if err != nil {
-		return nil, fmt.Errorf("header creation failed: %w", err)
-	}
-	shards := e.splitIntoShards(dataWithHeader)
+	shards := e.splitIntoShards(data)
 	if err := e.encoder.Encode(shards); err != nil {
 		return nil, fmt.Errorf("encoding failed: %w", err)
 	}

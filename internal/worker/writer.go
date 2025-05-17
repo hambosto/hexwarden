@@ -6,8 +6,6 @@ import (
 	"io"
 	"math"
 	"sync"
-
-	"github.com/hambosto/hexwarden/internal/ui"
 )
 
 func (w *Worker) writeResults(writer io.Writer, results <-chan TaskResult, wg *sync.WaitGroup, errChan chan<- error) {
@@ -42,7 +40,7 @@ func (w *Worker) writeResults(writer io.Writer, results <-chan TaskResult, wg *s
 }
 
 func (w *Worker) writeChunk(writer io.Writer, res TaskResult) error {
-	if w.processor.ProcessingMode == ui.ModeEncrypt {
+	if w.processing == Encryption {
 		if err := w.writeChunkSize(writer, len(res.Data)); err != nil {
 			return err
 		}

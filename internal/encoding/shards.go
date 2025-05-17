@@ -1,11 +1,5 @@
 package encoding
 
-import (
-	"encoding/binary"
-	"fmt"
-	"math"
-)
-
 func (e *Encoding) splitIntoShards(data []byte) [][]byte {
 	totalShards := e.dataShards + e.parityShards
 
@@ -60,15 +54,5 @@ func (e *Encoding) extractData(shards [][]byte) ([]byte, error) {
 		copy(combined[i*shardSize:], shards[i])
 	}
 
-	if len(combined) < headerSize {
-		return nil, fmt.Errorf("%w: too short", ErrCorruptedData)
-	}
-
-	originalSize := binary.BigEndian.Uint32(combined[:headerSize])
-	combinedLen := len(combined) - headerSize
-	if combinedLen < 0 || (originalSize > uint32(math.MaxInt32) && uint64(originalSize) > uint64(combinedLen)) {
-		return nil, fmt.Errorf("%w: invalid size header", ErrCorruptedData)
-	}
-
-	return combined[headerSize : headerSize+originalSize], nil
+	return combined, nil
 }
