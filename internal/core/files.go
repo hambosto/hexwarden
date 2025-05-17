@@ -24,7 +24,7 @@ type UserInteraction interface {
 	ChooseFile(files []string) (string, error)
 }
 
-type Process struct {
+type Config struct {
 	SourcePath      string
 	DestinationPath string
 	Password        string

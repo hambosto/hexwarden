@@ -15,7 +15,7 @@ func Execute() {
 
 	prompt := ui.NewPrompt()
 	fileManager := core.NewFileManager(3)
-	processor := core.NewProcessor(fileManager, prompt)
+	processor := core.NewFileProcessor(fileManager, prompt)
 
 	operation, err := prompt.GetProcessingMode()
 	if err != nil {

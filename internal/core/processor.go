@@ -12,54 +12,54 @@ import (
 	"github.com/hambosto/hexwarden/internal/worker"
 )
 
-type Processor struct {
-	files    FileHandler
-	interact UserInteraction
+type FileProcessor struct {
+	files FileHandler
+	ui    UserInteraction
 }
 
-func NewProcessor(files FileHandler, interact UserInteraction) *Processor {
-	return &Processor{
-		files:    files,
-		interact: interact,
+func NewFileProcessor(files FileHandler, ui UserInteraction) *FileProcessor {
+	return &FileProcessor{
+		files: files,
+		ui:    ui,
 	}
 }
 
-func (p *Processor) Process(process Process) error {
-	if err := p.validateConfig(process); err != nil {
+func (p *FileProcessor) Process(cfg Config) error {
+	if err := p.validate(cfg); err != nil {
 		return err
 	}
 
-	switch process.Mode {
+	switch cfg.Mode {
 	case ui.ModeEncrypt:
-		return p.encryptFile(process)
+		return p.encrypt(cfg)
 	case ui.ModeDecrypt:
-		return p.decryptFile(process)
+		return p.decrypt(cfg)
 	default:
-		return fmt.Errorf("unsupported operation mode: %s", process.Mode)
+		return fmt.Errorf("unsupported operation mode: %s", cfg.Mode)
 	}
 }
 
-func (p *Processor) ProcessFile(inputPath string, mode ui.ProcessorMode) error {
-	outputPath := calculateOutputPath(inputPath, mode)
+func (p *FileProcessor) ProcessFile(inputPath string, mode ui.ProcessorMode) error {
+	outputPath := getOutputPath(inputPath, mode)
 
-	config := Process{
+	cfg := Config{
 		SourcePath:      inputPath,
 		DestinationPath: outputPath,
 		Mode:            mode,
 	}
 
-	return p.Process(config)
+	return p.Process(cfg)
 }
 
-func (p *Processor) validateConfig(process Process) error {
-	if err := p.files.ValidatePath(process.SourcePath, true); err != nil {
+func (p *FileProcessor) validate(cfg Config) error {
+	if err := p.files.ValidatePath(cfg.SourcePath, true); err != nil {
 		return fmt.Errorf("source validation failed: %w", err)
 	}
 
-	if err := p.files.ValidatePath(process.DestinationPath, false); err != nil {
-		confirm, promptErr := p.interact.ConfirmFileOverwrite(process.DestinationPath)
-		if promptErr != nil {
-			return fmt.Errorf("overwrite confirmation failed: %w", promptErr)
+	if err := p.files.ValidatePath(cfg.DestinationPath, false); err != nil {
+		confirm, err := p.ui.ConfirmFileOverwrite(cfg.DestinationPath)
+		if err != nil {
+			return fmt.Errorf("overwrite confirmation failed: %w", err)
 		}
 		if !confirm {
 			return fmt.Errorf("operation cancelled by user")
@@ -69,67 +69,67 @@ func (p *Processor) validateConfig(process Process) error {
 	return nil
 }
 
-func (p *Processor) encryptFile(process Process) error {
-	sourceFile, sourceInfo, err := p.files.OpenFile(process.SourcePath)
+func (p *FileProcessor) encrypt(cfg Config) error {
+	srcFile, srcInfo, err := p.files.OpenFile(cfg.SourcePath)
 	if err != nil {
 		return err
 	}
-	defer sourceFile.Close()
+	defer srcFile.Close()
 
-	destFile, err := p.files.CreateFile(process.DestinationPath)
+	destFile, err := p.files.CreateFile(cfg.DestinationPath)
 	if err != nil {
 		return err
 	}
 	defer destFile.Close()
 
-	password := process.Password
+	password := cfg.Password
 	if password == "" {
-		password, err = p.interact.GetEncryptionPassword()
+		password, err = p.ui.GetEncryptionPassword()
 		if err != nil {
 			return fmt.Errorf("password prompt failed: %w", err)
 		}
 	}
 
-	key, salt, err := deriveEncryptionKey(password)
+	key, salt, err := deriveKey(password)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Encrypting %s...\n", process.SourcePath)
+	fmt.Printf("Encrypting %s...\n", cfg.SourcePath)
 
-	if err = p.performEncryption(sourceFile, destFile, sourceInfo, key, salt); err != nil {
-		if closeErr := destFile.Close(); closeErr != nil {
-			fmt.Fprintf(os.Stderr, "Warning: Failed to close destination file: %v\n", closeErr)
+	if err = p.runEncryption(srcFile, destFile, srcInfo, key, salt); err != nil {
+		if err := destFile.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: Failed to close destination file: %v\n", err)
 		}
-		if rmErr := os.Remove(process.DestinationPath); rmErr != nil {
-			fmt.Fprintf(os.Stderr, "Warning: Failed to remove incomplete file: %v\n", rmErr)
+		if err := os.Remove(cfg.DestinationPath); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: Failed to remove incomplete file: %v\n", err)
 		}
 		return err
 	}
 
-	if err = p.handleSourceCleanup(process.SourcePath, true); err != nil {
+	if err = p.cleanupSource(cfg.SourcePath, true); err != nil {
 		return err
 	}
 
-	fmt.Printf("File encrypted successfully: %s\n", process.DestinationPath)
+	fmt.Printf("File encrypted successfully: %s\n", cfg.DestinationPath)
 	return nil
 }
 
-func (p *Processor) decryptFile(process Process) error {
-	sourceFile, _, err := p.files.OpenFile(process.SourcePath)
+func (p *FileProcessor) decrypt(cfg Config) error {
+	srcFile, _, err := p.files.OpenFile(cfg.SourcePath)
 	if err != nil {
 		return err
 	}
-	defer sourceFile.Close()
+	defer srcFile.Close()
 
-	fileHeader, err := header.ReadHeader(sourceFile)
+	header, err := header.ReadHeader(srcFile)
 	if err != nil {
 		return fmt.Errorf("header reading failed: %w", err)
 	}
 
-	password := process.Password
+	password := cfg.Password
 	if password == "" {
-		password, err = p.interact.GetEncryptionPassword()
+		password, err = p.ui.GetEncryptionPassword()
 		if err != nil {
 			return fmt.Errorf("password prompt failed: %w", err)
 		}
@@ -140,59 +140,59 @@ func (p *Processor) decryptFile(process Process) error {
 		return fmt.Errorf("failed to initialize key derivation: %v", err)
 	}
 
-	key, err := kdfHandler.DeriveKey([]byte(password), fileHeader.Salt)
+	key, err := kdfHandler.DeriveKey([]byte(password), header.Salt)
 	if err != nil {
 		return fmt.Errorf("key derivation failed: %w", err)
 	}
 
-	destFile, err := p.files.CreateFile(process.DestinationPath)
+	destFile, err := p.files.CreateFile(cfg.DestinationPath)
 	if err != nil {
 		return err
 	}
 	defer destFile.Close()
 
-	fmt.Printf("Decrypting %s...\n", process.SourcePath)
+	fmt.Printf("Decrypting %s...\n", cfg.SourcePath)
 
-	if fileHeader.OriginalSize > uint64(math.MaxInt64) {
-		if closeErr := destFile.Close(); closeErr != nil {
-			fmt.Fprintf(os.Stderr, "Warning: Failed to close destination file: %v\n", closeErr)
+	if header.OriginalSize > uint64(math.MaxInt64) {
+		if err := destFile.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: Failed to close destination file: %v\n", err)
 		}
-		if rmErr := os.Remove(process.DestinationPath); rmErr != nil {
-			fmt.Fprintf(os.Stderr, "Warning: Failed to remove incomplete file: %v\n", rmErr)
+		if err := os.Remove(cfg.DestinationPath); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: Failed to remove incomplete file: %v\n", err)
 		}
 		return fmt.Errorf("file too large: size exceeds maximum allowed value for processing")
 	}
 
-	if err = p.performDecryption(sourceFile, destFile, key, fileHeader); err != nil {
-		if closeErr := destFile.Close(); closeErr != nil {
-			fmt.Fprintf(os.Stderr, "Warning: Failed to close destination file: %v\n", closeErr)
+	if err = p.runDecryption(srcFile, destFile, key, header); err != nil {
+		if err := destFile.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: Failed to close destination file: %v\n", err)
 		}
-		if rmErr := os.Remove(process.DestinationPath); rmErr != nil {
-			fmt.Fprintf(os.Stderr, "Warning: Failed to remove incomplete file: %v\n", rmErr)
+		if err := os.Remove(cfg.DestinationPath); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: Failed to remove incomplete file: %v\n", err)
 		}
 		return err
 	}
 
-	if err = p.handleSourceCleanup(process.SourcePath, false); err != nil {
+	if err = p.cleanupSource(cfg.SourcePath, false); err != nil {
 		return err
 	}
 
-	fmt.Printf("File decrypted successfully: %s\n", process.DestinationPath)
+	fmt.Printf("File decrypted successfully: %s\n", cfg.DestinationPath)
 	return nil
 }
 
-func (p *Processor) performEncryption(source *os.File, dest *os.File, sourceInfo os.FileInfo, key []byte, salt []byte) error {
-	processor, err := worker.New(key, worker.Encryption)
+func (p *FileProcessor) runEncryption(src *os.File, dest *os.File, srcInfo os.FileInfo, key []byte, salt []byte) error {
+	worker, err := worker.New(key, worker.Encryption)
 	if err != nil {
 		return fmt.Errorf("encryption setup failed: %w", err)
 	}
 
-	fileSize := sourceInfo.Size()
+	fileSize := srcInfo.Size()
 	if fileSize < 0 {
 		return fmt.Errorf("invalid file size: %d", fileSize)
 	}
 
-	h, err := header.NewHeader(salt, uint64(fileSize), processor.GetCipherNonce())
+	h, err := header.NewHeader(salt, uint64(fileSize), worker.GetCipherNonce())
 	if err != nil {
 		return fmt.Errorf("header creation failed: %w", err)
 	}
@@ -201,42 +201,42 @@ func (p *Processor) performEncryption(source *os.File, dest *os.File, sourceInfo
 		return fmt.Errorf("header writing failed: %w", err)
 	}
 
-	if err = processor.Process(source, dest, sourceInfo.Size()); err != nil {
+	if err = worker.Process(src, dest, srcInfo.Size()); err != nil {
 		return fmt.Errorf("encryption failed: %w", err)
 	}
 
 	return nil
 }
 
-func (p *Processor) performDecryption(source *os.File, dest *os.File, key []byte, fileHeader header.Header) error {
-	processor, err := worker.New(key, worker.Decryption)
+func (p *FileProcessor) runDecryption(src *os.File, dest *os.File, key []byte, header header.Header) error {
+	worker, err := worker.New(key, worker.Decryption)
 	if err != nil {
 		return fmt.Errorf("decryption setup failed: %w", err)
 	}
 
-	if err := processor.SetCipherNonce(fileHeader.Nonce); err != nil {
+	if err := worker.SetCipherNonce(header.Nonce); err != nil {
 		return fmt.Errorf("failed to set cipher nonce: %w", err)
 	}
 
-	if fileHeader.OriginalSize > math.MaxInt64 {
+	if header.OriginalSize > math.MaxInt64 {
 		return fmt.Errorf("file size exceeds maximum allowed value for decryption")
 	}
 
-	originalSize := int64(fileHeader.OriginalSize)
-	if err := processor.Process(source, dest, originalSize); err != nil {
+	originalSize := int64(header.OriginalSize)
+	if err := worker.Process(src, dest, originalSize); err != nil {
 		return fmt.Errorf("decryption failed: %w", err)
 	}
 
 	return nil
 }
 
-func (p *Processor) handleSourceCleanup(path string, isEncryption bool) error {
+func (p *FileProcessor) cleanupSource(path string, isEncryption bool) error {
 	fileType := "original"
 	if !isEncryption {
 		fileType = "encrypted"
 	}
 
-	shouldDelete, deleteType, err := p.interact.ConfirmFileRemoval(
+	shouldDelete, deleteType, err := p.ui.ConfirmFileRemoval(
 		path,
 		fmt.Sprintf("Delete %s file", fileType),
 	)
@@ -253,7 +253,7 @@ func (p *Processor) handleSourceCleanup(path string, isEncryption bool) error {
 	return nil
 }
 
-func deriveEncryptionKey(password string) ([]byte, []byte, error) {
+func deriveKey(password string) ([]byte, []byte, error) {
 	deriver, err := kdf.NewDeriver(nil)
 	if err != nil {
 		return nil, nil, fmt.Errorf("key derivation setup failed: %v", err)
@@ -272,7 +272,7 @@ func deriveEncryptionKey(password string) ([]byte, []byte, error) {
 	return key, salt, nil
 }
 
-func calculateOutputPath(inputPath string, mode ui.ProcessorMode) string {
+func getOutputPath(inputPath string, mode ui.ProcessorMode) string {
 	if mode == ui.ModeEncrypt {
 		return inputPath + ui.FileExtension
 	}

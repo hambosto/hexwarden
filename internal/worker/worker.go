@@ -39,7 +39,7 @@ type TaskResult struct {
 }
 
 type Worker struct {
-	processor   *processor.ChunkProcessor
+	processor   *processor.Processor
 	bar         *ui.ProgressBar
 	concurrency int
 	processing  Processing
@@ -50,7 +50,7 @@ func New(key []byte, processing Processing) (*Worker, error) {
 		return nil, ErrInvalidKey
 	}
 
-	p, err := processor.NewChunkProcessor(key)
+	p, err := processor.NewProcessor(key)
 	if err != nil {
 		return nil, fmt.Errorf("creating chunk processor: %w", err)
 	}

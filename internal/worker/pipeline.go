@@ -58,9 +58,9 @@ func (w *Worker) processTasks(tasks <-chan Task, results chan<- TaskResult) {
 		)
 
 		if w.processing == Encryption {
-			output, err = w.processor.Encryption(t.Data)
+			output, err = w.processor.Encrypt(t.Data)
 		} else {
-			output, err = w.processor.Decryption(t.Data)
+			output, err = w.processor.Decrypt(t.Data)
 		}
 
 		size := len(t.Data)

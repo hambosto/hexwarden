@@ -4,13 +4,13 @@ import (
 	"fmt"
 )
 
-func UnpadPKCS7(data []byte, blockSize int) ([]byte, error) {
-	if len(data) == 0 || len(data)%blockSize != 0 {
-		return nil, fmt.Errorf("invalid data length: %d (must be multiple of block size %d)", len(data), blockSize)
+func (p *PKCS7) Unpad(data []byte) ([]byte, error) {
+	if len(data) == 0 || len(data)%p.BlockSize != 0 {
+		return nil, fmt.Errorf("invalid data length: %d (must be multiple of block size %d)", len(data), p.BlockSize)
 	}
 
 	paddingLen := int(data[len(data)-1])
-	if paddingLen == 0 || paddingLen > blockSize || paddingLen > len(data) {
+	if paddingLen == 0 || paddingLen > p.BlockSize || paddingLen > len(data) {
 		return nil, fmt.Errorf("invalid padding length: %d", paddingLen)
 	}
 

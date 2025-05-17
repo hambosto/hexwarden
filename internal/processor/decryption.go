@@ -2,30 +2,28 @@ package processor
 
 import (
 	"fmt"
-
-	"github.com/hambosto/hexwarden/internal/padding"
 )
 
-func (c *ChunkProcessor) Decryption(chunk []byte) ([]byte, error) {
-	decodedData, err := c.Encoding.Decode(chunk)
+func (p *Processor) Decrypt(data []byte) ([]byte, error) {
+	decoded, err := p.Encoder.Decode(data)
 	if err != nil {
-		return nil, fmt.Errorf("reed-solomon decoding failed: %w", err)
+		return nil, fmt.Errorf("decoding failed: %w", err)
 	}
 
-	decrypted, err := c.Cipher.Decrypt(decodedData)
+	decrypted, err := p.Cipher.Decrypt(decoded)
 	if err != nil {
-		return nil, fmt.Errorf("cipher decryption failed: %w", err)
+		return nil, fmt.Errorf("decryption failed: %w", err)
 	}
 
-	unpaddedData, err := padding.UnpadPKCS7(decrypted, 16)
+	unpadded, err := p.Padding.Unpad(decrypted)
 	if err != nil {
-		return nil, fmt.Errorf("padding failed: %w", err)
+		return nil, fmt.Errorf("unpadding failed: %w", err)
 	}
 
-	decompressedData, err := c.Compression.Decompress(unpaddedData)
+	decompressed, err := p.Compressor.Decompress(unpadded)
 	if err != nil {
-		return nil, fmt.Errorf("zlib decompression failed: %w", err)
+		return nil, fmt.Errorf("decompression failed: %w", err)
 	}
 
-	return decompressedData, nil
+	return decompressed, nil
 }

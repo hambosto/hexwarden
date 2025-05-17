@@ -7,11 +7,7 @@ import (
 	"math"
 )
 
-func PadPKCS7(data []byte, blockSize int) ([]byte, error) {
-	if blockSize <= 0 || blockSize > 255 {
-		return nil, fmt.Errorf("invalid block size: %d (must be between 1 and 255)", blockSize)
-	}
-
+func (p *PKCS7) Pad(data []byte) ([]byte, error) {
 	dataLen := len(data)
 	if dataLen > math.MaxUint32 {
 		return nil, fmt.Errorf("data too large to encode length as uint32: %d bytes", dataLen)
@@ -22,9 +18,9 @@ func PadPKCS7(data []byte, blockSize int) ([]byte, error) {
 
 	combined := append(sizeHeader, data...)
 
-	paddingLen := blockSize - (len(combined) % blockSize)
+	paddingLen := p.BlockSize - (len(combined) % p.BlockSize)
 	if paddingLen == 0 {
-		paddingLen = blockSize
+		paddingLen = p.BlockSize
 	}
 
 	padding := bytes.Repeat([]byte{byte(paddingLen)}, paddingLen)
