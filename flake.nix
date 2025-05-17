@@ -26,7 +26,7 @@
         in
         {
           options.programs.hexwarden = {
-            enable = lib.mkEnableOption "HexWarden Encryption CLI tool";
+            enable = lib.mkEnableOption "Enable hexwarden encryption cli tool";
             package = lib.mkOption {
               type = lib.types.package;
               default = self.packages.${pkgs.system}.default;
@@ -51,7 +51,7 @@
         in
         {
           options.programs.hexwarden = {
-            enable = lib.mkEnableOption "HexWarden Encryption CLI tool";
+            enable = lib.mkEnableOption "Enable hexwarden encryption cli tool";
             package = lib.mkOption {
               type = lib.types.package;
               default = self.packages.${pkgs.system}.default;
@@ -72,7 +72,7 @@
             pname = "hexwarden";
             version = "1.0";
             src = ./.;
-            vendorHash = "sha256-KO1Z4XvSvh2B2hgl2DW+WZMXe5gdV7YTYkaATKwtZuM=";
+            vendorHash = "sha256-w1rxj2G0ZaWfmtDNlGyCfYg8ZKjVmPbWfKVGALPEMyE=";
             env.CGO_ENABLED = 0;
             ldflags = [
               "-extldflags '-static'"
