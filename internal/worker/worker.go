@@ -40,7 +40,7 @@ type TaskResult struct {
 
 type Worker struct {
 	processor   *processor.ChunkProcessor
-	spinner     *ui.Spinner
+	bar         *ui.ProgressBar
 	concurrency int
 	processing  Processing
 }
@@ -76,9 +76,12 @@ func (w *Worker) Process(input io.Reader, output io.Writer, totalSize int64) err
 		return ErrNilStream
 	}
 
-	if err := w.setProgress(totalSize); err != nil {
-		return fmt.Errorf("setting progress: %w", err)
+	label := "Encrypting..."
+	if w.processing != Encryption {
+		label = "Decrypting..."
 	}
+
+	w.bar = ui.NewProgressBar(totalSize, label)
 	return w.runPipeline(input, output)
 }
 
@@ -88,18 +91,4 @@ func (w *Worker) GetCipherNonce() []byte {
 
 func (w *Worker) SetCipherNonce(nonce []byte) error {
 	return w.processor.Cipher.SetNonce(nonce)
-}
-
-func (w *Worker) setProgress(size int64) error {
-	label := "Encrypting..."
-	if w.processing != Encryption {
-		label = "Decrypting..."
-	}
-
-	w.spinner = ui.NewSpinner(ui.DefaultConfig(size, label))
-	if err := w.spinner.Start(); err != nil {
-		return fmt.Errorf("starting spinner: %w", err)
-	}
-
-	return nil
 }

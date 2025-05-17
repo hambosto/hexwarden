@@ -3,7 +3,7 @@ package ui
 import (
 	"fmt"
 
-	"github.com/charmbracelet/huh"
+	"github.com/AlecAivazis/survey/v2"
 )
 
 type (
@@ -26,45 +26,31 @@ func NewPrompt() *Prompt {
 
 func (p *Prompt) ConfirmFileOverwrite(path string) (bool, error) {
 	var result bool
-
-	form := huh.NewForm(
-		huh.NewGroup(
-			huh.NewConfirm().
-				Title(fmt.Sprintf("Output file %s already exists. Overwrite?", path)).
-				Value(&result),
-		),
-	).WithTheme(huh.ThemeDracula())
-
-	err := form.Run()
+	prompt := &survey.Confirm{
+		Message: fmt.Sprintf("Output file %s already exists. Overwrite?", path),
+	}
+	err := survey.AskOne(prompt, &result)
 	if err != nil {
 		return false, err
 	}
-
 	return result, nil
 }
 
 func (p *Prompt) GetEncryptionPassword() (string, error) {
-	var (
-		password string
-		confirm  string
-	)
+	var password, confirm string
 
-	form := huh.NewForm(
-		huh.NewGroup(
-			huh.NewInput().
-				Title("Enter password:").
-				EchoMode(huh.EchoModePassword).
-				Value(&password),
-			huh.NewInput().
-				Title("Confirm password:").
-				EchoMode(huh.EchoModePassword).
-				Value(&confirm),
-		),
-	).WithTheme(huh.ThemeDracula())
-
-	err := form.Run()
-	if err != nil {
+	passwordPrompt := &survey.Password{
+		Message: "Enter password:",
+	}
+	if err := survey.AskOne(passwordPrompt, &password); err != nil {
 		return "", fmt.Errorf("failed to get password: %w", err)
+	}
+
+	confirmPrompt := &survey.Password{
+		Message: "Confirm password:",
+	}
+	if err := survey.AskOne(confirmPrompt, &confirm); err != nil {
+		return "", fmt.Errorf("failed to confirm password: %w", err)
 	}
 
 	if password != confirm {
@@ -75,46 +61,27 @@ func (p *Prompt) GetEncryptionPassword() (string, error) {
 }
 
 func (p *Prompt) ConfirmFileRemoval(path, message string) (bool, DeleteOption, error) {
-	var (
-		result     bool
-		deleteType string
-	)
-
-	confirmForm := huh.NewForm(
-		huh.NewGroup(
-			huh.NewConfirm().
-				Title(fmt.Sprintf("%s %s", message, path)).
-				Value(&result),
-		),
-	)
-
-	err := confirmForm.Run()
-	if err != nil {
+	var confirm bool
+	confirmPrompt := &survey.Confirm{
+		Message: fmt.Sprintf("%s %s", message, path),
+	}
+	if err := survey.AskOne(confirmPrompt, &confirm); err != nil {
 		return false, "", err
 	}
-
-	if !result {
+	if !confirm {
 		return false, "", nil
 	}
 
+	var deleteType string
 	deleteOptions := []string{
 		string(DeleteStandard),
 		string(DeleteSecure),
 	}
-
-	deleteForm := huh.NewForm(
-		huh.NewGroup(
-			huh.NewSelect[string]().
-				Title("Select delete type").
-				Options(
-					huh.NewOptions(deleteOptions...)...,
-				).
-				Value(&deleteType),
-		),
-	).WithTheme(huh.ThemeDracula())
-
-	err = deleteForm.Run()
-	if err != nil {
+	deletePrompt := &survey.Select{
+		Message: "Select delete type:",
+		Options: deleteOptions,
+	}
+	if err := survey.AskOne(deletePrompt, &deleteType); err != nil {
 		return false, "", err
 	}
 
@@ -128,19 +95,11 @@ func (p *Prompt) GetProcessingMode() (ProcessorMode, error) {
 		string(ModeDecrypt),
 	}
 
-	form := huh.NewForm(
-		huh.NewGroup(
-			huh.NewSelect[string]().
-				Title("Select Operation:").
-				Options(
-					huh.NewOptions(operationOptions...)...,
-				).
-				Value(&operationType),
-		),
-	).WithTheme(huh.ThemeDracula())
-
-	err := form.Run()
-	if err != nil {
+	prompt := &survey.Select{
+		Message: "Select Operation:",
+		Options: operationOptions,
+	}
+	if err := survey.AskOne(prompt, &operationType); err != nil {
 		return "", fmt.Errorf("operation selection failed: %w", err)
 	}
 
@@ -152,23 +111,14 @@ func (p *Prompt) ChooseFile(files []string) (string, error) {
 		return "", fmt.Errorf("no files available for selection")
 	}
 
-	var selectedFile string
-
-	form := huh.NewForm(
-		huh.NewGroup(
-			huh.NewSelect[string]().
-				Title("Select file:").
-				Options(
-					huh.NewOptions(files...)...,
-				).
-				Value(&selectedFile),
-		),
-	).WithTheme(huh.ThemeDracula())
-
-	err := form.Run()
-	if err != nil {
+	var selected string
+	prompt := &survey.Select{
+		Message: "Select file:",
+		Options: files,
+	}
+	if err := survey.AskOne(prompt, &selected); err != nil {
 		return "", fmt.Errorf("file selection failed: %w", err)
 	}
 
-	return selectedFile, nil
+	return selected, nil
 }

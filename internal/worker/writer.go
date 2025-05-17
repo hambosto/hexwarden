@@ -50,7 +50,10 @@ func (w *Worker) writeChunk(writer io.Writer, res TaskResult) error {
 		return fmt.Errorf("write failed: %w", err)
 	}
 
-	w.spinner.Update(res.Size)
+	if err := w.bar.Add(int64(res.Size)); err != nil {
+		return fmt.Errorf("failed to update progress bar: %w", err)
+	}
+
 	return nil
 }
 
