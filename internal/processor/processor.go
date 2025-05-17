@@ -13,7 +13,7 @@ type Processor struct {
 	Cipher     *cipher.Cipher
 	Encoder    *encoding.Encoding
 	Compressor *compression.ZlibCompressor
-	Padding    *padding.PKCS7
+	Padding    *padding.Padding
 }
 
 func NewProcessor(key []byte) (*Processor, error) {

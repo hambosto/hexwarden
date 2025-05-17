@@ -7,7 +7,7 @@ import (
 	"math"
 )
 
-func (p *PKCS7) Pad(data []byte) ([]byte, error) {
+func (p *Padding) Pad(data []byte) ([]byte, error) {
 	dataLen := len(data)
 	if dataLen > math.MaxUint32 {
 		return nil, fmt.Errorf("data too large to encode length as uint32: %d bytes", dataLen)

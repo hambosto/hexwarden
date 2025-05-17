@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-func (p *PKCS7) Unpad(data []byte) ([]byte, error) {
+func (p *Padding) Unpad(data []byte) ([]byte, error) {
 	if len(data) == 0 || len(data)%p.BlockSize != 0 {
 		return nil, fmt.Errorf("invalid data length: %d (must be multiple of block size %d)", len(data), p.BlockSize)
 	}
