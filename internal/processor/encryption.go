@@ -4,12 +4,10 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math"
-
-	"github.com/hambosto/hexwarden/internal/compression"
 )
 
 func (c *ChunkProcessor) encrypt(chunk []byte) ([]byte, error) {
-	compressedData, err := compression.CompressData(chunk)
+	compressedData, err := c.Compression.Compress(chunk)
 	if err != nil {
 		return nil, fmt.Errorf("compression failed: %w", err)
 	}

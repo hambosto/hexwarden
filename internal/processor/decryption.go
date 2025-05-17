@@ -2,8 +2,6 @@ package processor
 
 import (
 	"fmt"
-
-	"github.com/hambosto/hexwarden/internal/compression"
 )
 
 func (c *ChunkProcessor) decrypt(chunk []byte) ([]byte, error) {
@@ -17,7 +15,7 @@ func (c *ChunkProcessor) decrypt(chunk []byte) ([]byte, error) {
 		return nil, fmt.Errorf("cipher decryption failed: %w", err)
 	}
 
-	decompressedData, err := compression.DecompressData(decrypted)
+	decompressedData, err := c.Compression.Decompress(decrypted)
 	if err != nil {
 		return nil, fmt.Errorf("zlib decompression failed: %w", err)
 	}

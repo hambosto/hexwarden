@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/hambosto/hexwarden/internal/cipher"
+	"github.com/hambosto/hexwarden/internal/compression"
 	"github.com/hambosto/hexwarden/internal/encoding"
 	"github.com/hambosto/hexwarden/internal/ui"
 )
@@ -11,6 +12,7 @@ import (
 type ChunkProcessor struct {
 	Cipher         *cipher.Cipher
 	Encoding       *encoding.Encoding
+	Compression    *compression.ZlibCompressor
 	ProcessingMode ui.ProcessorMode
 }
 
@@ -29,9 +31,15 @@ func NewChunkProcessor(key []byte, processingMode ui.ProcessorMode) (*ChunkProce
 		return nil, fmt.Errorf("failed to create Reed-Solomon encoder: %w", err)
 	}
 
+	compression, err := compression.NewZlibCompressor(compression.LevelBestSpeed)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create compression: %w", err)
+	}
+
 	return &ChunkProcessor{
 		Cipher:         cipher,
 		Encoding:       encoding,
+		Compression:    compression,
 		ProcessingMode: processingMode,
 	}, nil
 }
