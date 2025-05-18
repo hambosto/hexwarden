@@ -98,11 +98,11 @@ func (p *FileProcessor) encrypt(cfg Config) error {
 	fmt.Printf("Encrypting %s...\n", cfg.SourcePath)
 
 	if err = p.runEncryption(srcFile, destFile, srcInfo, key, salt); err != nil {
-		if err := destFile.Close(); err != nil {
-			return fmt.Errorf("failed to close destination file: %w", err)
+		if closeErr := destFile.Close(); closeErr != nil {
+			return fmt.Errorf("failed to close destination file: %w", closeErr)
 		}
-		if err := os.Remove(cfg.DestinationPath); err != nil {
-			return fmt.Errorf("failed to remove incomplete file: %w", err)
+		if removeErr := os.Remove(cfg.DestinationPath); removeErr != nil {
+			return fmt.Errorf("failed to remove incomplete file: %w", removeErr)
 		}
 		return err
 	}
@@ -158,21 +158,21 @@ func (p *FileProcessor) decrypt(cfg Config) error {
 	fmt.Printf("Decrypting %s...\n", cfg.SourcePath)
 
 	if header.OriginalSize > uint64(math.MaxInt64) {
-		if err := destFile.Close(); err != nil {
-			return fmt.Errorf("failed to close destination file: %w", err)
+		if closeErr := destFile.Close(); closeErr != nil {
+			return fmt.Errorf("failed to close destination file: %w", closeErr)
 		}
-		if err := os.Remove(cfg.DestinationPath); err != nil {
-			return fmt.Errorf("failed to remove incomplete file: %w", err)
+		if removeErr := os.Remove(cfg.DestinationPath); removeErr != nil {
+			return fmt.Errorf("failed to remove incomplete file: %w", removeErr)
 		}
 		return fmt.Errorf("file too large: size exceeds maximum allowed value for processing")
 	}
 
 	if err = p.runDecryption(srcFile, destFile, key, header); err != nil {
-		if err := destFile.Close(); err != nil {
-			return fmt.Errorf("failed to close destination file: %w", err)
+		if closeErr := destFile.Close(); closeErr != nil {
+			return fmt.Errorf("failed to close destination file: %w", closeErr)
 		}
-		if err := os.Remove(cfg.DestinationPath); err != nil {
-			return fmt.Errorf("failed to remove incomplete file: %w", err)
+		if removeErr := os.Remove(cfg.DestinationPath); removeErr != nil {
+			return fmt.Errorf("failed to remove incomplete file: %w", removeErr)
 		}
 		return err
 	}
