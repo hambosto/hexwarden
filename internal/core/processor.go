@@ -99,10 +99,10 @@ func (p *FileProcessor) encrypt(cfg Config) error {
 
 	if err = p.runEncryption(srcFile, destFile, srcInfo, key, salt); err != nil {
 		if err := destFile.Close(); err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: Failed to close destination file: %v\n", err)
+			return fmt.Errorf("failed to close destination file: %w", err)
 		}
 		if err := os.Remove(cfg.DestinationPath); err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: Failed to remove incomplete file: %v\n", err)
+			return fmt.Errorf("failed to remove incomplete file: %w", err)
 		}
 		return err
 	}
@@ -143,6 +143,10 @@ func (p *FileProcessor) decrypt(cfg Config) error {
 	key, err := kdfHandler.DeriveKey([]byte(password), header.Salt)
 	if err != nil {
 		return fmt.Errorf("key derivation failed: %w", err)
+	}
+
+	if !header.VerifyPassword(key) {
+		return fmt.Errorf("password verification failed")
 	}
 
 	destFile, err := p.files.CreateFile(cfg.DestinationPath)
@@ -192,7 +196,7 @@ func (p *FileProcessor) runEncryption(src *os.File, dest *os.File, srcInfo os.Fi
 		return fmt.Errorf("invalid file size: %d", fileSize)
 	}
 
-	h, err := header.NewHeader(salt, uint64(fileSize), worker.GetCipherNonce())
+	h, err := header.NewHeader(salt, uint64(fileSize), worker.GetCipherNonce(), key)
 	if err != nil {
 		return fmt.Errorf("header creation failed: %w", err)
 	}

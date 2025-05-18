@@ -25,6 +25,10 @@ func WriteHeader(w io.Writer, h Header) error {
 		return fmt.Errorf("writing cipher nonce: %w", err)
 	}
 
+	if err := write(w, h.VerificationHash); err != nil {
+		return fmt.Errorf("writing verification hash: %w", err)
+	}
+
 	return nil
 }
 

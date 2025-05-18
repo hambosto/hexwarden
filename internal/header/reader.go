@@ -27,6 +27,12 @@ func ReadHeader(r io.Reader) (Header, error) {
 	}
 	h.Nonce = nonce
 
+	verification, err := read(r, VerificationSize)
+	if err != nil {
+		return Header{}, fmt.Errorf("reading verification hash: %w", err)
+	}
+	h.VerificationHash = verification
+
 	if err := h.Validate(); err != nil {
 		return Header{}, err
 	}
