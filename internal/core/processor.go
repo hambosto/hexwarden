@@ -159,20 +159,20 @@ func (p *FileProcessor) decrypt(cfg Config) error {
 
 	if header.OriginalSize > uint64(math.MaxInt64) {
 		if err := destFile.Close(); err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: Failed to close destination file: %v\n", err)
+			return fmt.Errorf("failed to close destination file: %w", err)
 		}
 		if err := os.Remove(cfg.DestinationPath); err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: Failed to remove incomplete file: %v\n", err)
+			return fmt.Errorf("failed to remove incomplete file: %w", err)
 		}
 		return fmt.Errorf("file too large: size exceeds maximum allowed value for processing")
 	}
 
 	if err = p.runDecryption(srcFile, destFile, key, header); err != nil {
 		if err := destFile.Close(); err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: Failed to close destination file: %v\n", err)
+			return fmt.Errorf("failed to close destination file: %w", err)
 		}
 		if err := os.Remove(cfg.DestinationPath); err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: Failed to remove incomplete file: %v\n", err)
+			return fmt.Errorf("failed to remove incomplete file: %w", err)
 		}
 		return err
 	}
