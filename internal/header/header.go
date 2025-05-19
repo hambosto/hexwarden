@@ -21,7 +21,7 @@ type Header struct {
 }
 
 func NewHeader(salt []byte, originalSize uint64, nonce []byte, key []byte) (Header, error) {
-	verification := generateVerificationHash(salt, key)
+	verification := getVerificationHash(salt, key)
 
 	h := Header{
 		Salt:             salt,
@@ -54,12 +54,12 @@ func (h Header) Validate() error {
 }
 
 func (h Header) VerifyPassword(key []byte) bool {
-	expectedHash := generateVerificationHash(h.Salt, key)
+	expectedHash := getVerificationHash(h.Salt, key)
 
 	return hmac.Equal(h.VerificationHash, expectedHash)
 }
 
-func generateVerificationHash(salt, key []byte) []byte {
+func getVerificationHash(salt, key []byte) []byte {
 	mac := hmac.New(sha256.New, key)
 	mac.Write(salt)
 	return mac.Sum(nil)
