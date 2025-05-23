@@ -50,15 +50,16 @@ func New(key []byte, processing Processing) (*Worker, error) {
 		return nil, ErrInvalidKey
 	}
 
-	p, err := processor.NewProcessor(key)
+	processor, err := processor.NewProcessor(key)
 	if err != nil {
 		return nil, fmt.Errorf("creating chunk processor: %w", err)
 	}
 
 	concurrency := max(runtime.NumCPU(), 1)
+	runtime.GOMAXPROCS(concurrency)
 
 	return &Worker{
-		processor:   p,
+		processor:   processor,
 		concurrency: concurrency,
 		processing:  processing,
 	}, nil

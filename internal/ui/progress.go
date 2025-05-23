@@ -16,10 +16,18 @@ func NewProgressBar(size int64, label string) *ProgressBar {
 		progressbar.OptionShowBytes(true),
 		progressbar.OptionShowCount(),
 		progressbar.OptionFullWidth(),
-		progressbar.OptionSetTheme(progressbar.ThemeUnicode),
+		progressbar.OptionSetTheme(progressbar.Theme{
+			Saucer:        "[green]=[reset]",
+			SaucerHead:    "[green]>[reset]",
+			SaucerPadding: " ",
+			BarStart:      "[",
+			BarEnd:        "]",
+		}),
 	)
 
-	return &ProgressBar{bar: bar}
+	return &ProgressBar{
+		bar: bar,
+	}
 }
 
 func (p *ProgressBar) Add(n int64) error {
