@@ -16,7 +16,7 @@ type FileHandler interface {
 	OpenFile(path string) (*os.File, os.FileInfo, error)
 }
 
-type UserInteraction interface {
+type UserInterface interface {
 	ConfirmFileOverwrite(path string) (bool, error)
 	GetEncryptionPassword() (string, error)
 	ConfirmFileRemoval(path string, message string) (bool, ui.DeleteOption, error)

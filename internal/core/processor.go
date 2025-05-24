@@ -14,10 +14,10 @@ import (
 
 type FileProcessor struct {
 	files FileHandler
-	ui    UserInteraction
+	ui    UserInterface
 }
 
-func NewFileProcessor(files FileHandler, ui UserInteraction) *FileProcessor {
+func NewFileProcessor(files FileHandler, ui UserInterface) *FileProcessor {
 	return &FileProcessor{
 		files: files,
 		ui:    ui,
