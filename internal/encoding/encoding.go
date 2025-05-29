@@ -74,3 +74,10 @@ func (e *Encoding) Decode(encoded []byte) ([]byte, error) {
 
 	return e.extractData(shards)
 }
+
+func (e *Encoding) validate(data []byte) error {
+	if len(data) == 0 || len(data) > maxDataLen {
+		return fmt.Errorf("%w: must be between 1 qand %d bytes", ErrDataSize, maxDataLen)
+	}
+	return nil
+}
