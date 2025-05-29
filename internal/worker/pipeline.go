@@ -25,6 +25,12 @@ func (w *Worker) runPipeline(r io.Reader, wr io.Writer) error {
 	go w.writeResults(wr, results, &writer, errChan)
 
 	if err := w.setTasks(r, tasks); err != nil {
+		close(tasks)  // Signal workers that no more tasks will be sent.
+		worker.Wait() // Wait for all workers to finish processing any in-flight tasks and exit.
+
+		close(results) // Signal the writer that no more results will be sent.
+		writer.Wait()  // Wait for the writer to finish processing any in-flight results and exit.
+
 		return fmt.Errorf("task distribution error: %v", err)
 	}
 
