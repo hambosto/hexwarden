@@ -24,7 +24,6 @@ func (c *Compression) Compress(data []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer writer.Close()
 
 	if _, err := writer.Write(data); err != nil {
 		return nil, err
@@ -54,11 +53,14 @@ func (c *Compression) Decompress(data []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer reader.Close()
 
 	// Read all decompressed data
 	decompressed, err := io.ReadAll(reader)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := reader.Close(); err != nil {
 		return nil, err
 	}
 
