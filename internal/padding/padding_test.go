@@ -6,18 +6,18 @@ import (
 	"testing"
 )
 
-func TestNewPKCS7(t *testing.T) {
-	_, err := NewPKCS7(0)
+func TestPKCS7(t *testing.T) {
+	_, err := New(0)
 	if !errors.Is(err, ErrInvalidBlockSize) {
 		t.Errorf("expected ErrInvalidBlockSize, got %v", err)
 	}
 
-	_, err = NewPKCS7(300)
+	_, err = New(300)
 	if !errors.Is(err, ErrInvalidBlockSize) {
 		t.Errorf("expected ErrInvalidBlockSize, got %v", err)
 	}
 
-	p, err := NewPKCS7(16)
+	p, err := New(16)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -27,7 +27,7 @@ func TestNewPKCS7(t *testing.T) {
 }
 
 func TestPadUnpad(t *testing.T) {
-	p, _ := NewPKCS7(16)
+	p, _ := New(16)
 	original := []byte("hello world")
 
 	padded, err := p.Pad(original)
@@ -46,7 +46,7 @@ func TestPadUnpad(t *testing.T) {
 }
 
 func TestPadExactBlockSize(t *testing.T) {
-	p, _ := NewPKCS7(8)
+	p, _ := New(8)
 	original := []byte("1234567") // 7 bytes
 	padded, err := p.Pad(original)
 	if err != nil {
@@ -69,7 +69,7 @@ func TestPadExactBlockSize(t *testing.T) {
 }
 
 func TestPadTooLarge(t *testing.T) {
-	p, _ := NewPKCS7(16)
+	p, _ := New(16)
 
 	// 1 more than uint32 max
 	tooLarge := make([]byte, 1<<32)
@@ -80,7 +80,7 @@ func TestPadTooLarge(t *testing.T) {
 }
 
 func TestUnpadInvalidLength(t *testing.T) {
-	p, _ := NewPKCS7(8)
+	p, _ := New(8)
 	_, err := p.Unpad([]byte("notmod")) // 7 bytes, not divisible by block size
 	if !errors.Is(err, ErrInvalidDataLength) {
 		t.Errorf("expected ErrInvalidDataLength, got %v", err)
@@ -88,7 +88,7 @@ func TestUnpadInvalidLength(t *testing.T) {
 }
 
 func TestUnpadInvalidPadding(t *testing.T) {
-	p, _ := NewPKCS7(8)
+	p, _ := New(8)
 
 	data := []byte("12345678abcdefgh") // padded correctly
 	padded, _ := p.Pad(data)
@@ -101,7 +101,7 @@ func TestUnpadInvalidPadding(t *testing.T) {
 }
 
 func TestUnpadShortHeader(t *testing.T) {
-	p, _ := NewPKCS7(8)
+	p, _ := New(8)
 
 	data := []byte("abcd") // 4 bytes
 	padded, _ := p.Pad(data)
@@ -116,7 +116,7 @@ func TestUnpadShortHeader(t *testing.T) {
 }
 
 func TestUnpadHeaderMismatch(t *testing.T) {
-	p, _ := NewPKCS7(8)
+	p, _ := New(8)
 
 	original := []byte("data with header")
 	padded, _ := p.Pad(original)

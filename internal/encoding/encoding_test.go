@@ -6,18 +6,18 @@ import (
 	"testing"
 )
 
-func TestNewEncoder(t *testing.T) {
-	_, err := NewEncoder(0, 2)
+func TestNew(t *testing.T) {
+	_, err := New(0, 2)
 	if !errors.Is(err, ErrInvalidDataShards) {
 		t.Errorf("expected ErrInvalidDataShards, got %v", err)
 	}
 
-	_, err = NewEncoder(4, 0)
+	_, err = New(4, 0)
 	if !errors.Is(err, ErrInvalidParityShards) {
 		t.Errorf("expected ErrInvalidParityShards, got %v", err)
 	}
 
-	encoder, err := NewEncoder(4, 2)
+	encoder, err := New(4, 2)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -30,7 +30,7 @@ func TestNewEncoder(t *testing.T) {
 func TestEncodeDecode(t *testing.T) {
 	data := []byte("The quick brown fox jumps over the lazy dog")
 
-	encoder, err := NewEncoder(5, 3)
+	encoder, err := New(5, 3)
 	if err != nil {
 		t.Fatalf("failed to create encoder: %v", err)
 	}
@@ -54,12 +54,12 @@ func TestEncodeDecode(t *testing.T) {
 }
 
 func TestEncodeInvalidSize(t *testing.T) {
-	encoder, err := NewEncoder(2, 2)
+	encoder, err := New(2, 2)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	data := make([]byte, maxdataShards+1) // too big
+	data := make([]byte, maxDataLen+1) // too big
 	_, err = encoder.Encode(data)
 	if !errors.Is(err, ErrDataSize) {
 		t.Errorf("expected ErrDataSize, got %v", err)
@@ -67,7 +67,7 @@ func TestEncodeInvalidSize(t *testing.T) {
 }
 
 func TestDecodeCorruptData(t *testing.T) {
-	encoder, err := NewEncoder(4, 2)
+	encoder, err := New(4, 2)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -94,7 +94,7 @@ func TestDecodeCorruptData(t *testing.T) {
 }
 
 func TestDecodeInsufficientShards(t *testing.T) {
-	encoder, _ := NewEncoder(4, 2)
+	encoder, _ := New(4, 2)
 
 	data := []byte("1234567890")
 	encoded, _ := encoder.Encode(data)

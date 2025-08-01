@@ -29,7 +29,7 @@ type Padder struct {
 
 // NewPKCS7 creates a new PKCS#7 padder with the specified block size.
 // Block size must be between 1 and 255 bytes inclusive.
-func NewPKCS7(blockSize int) (*Padder, error) {
+func New(blockSize int) (*Padder, error) {
 	if blockSize <= 0 || blockSize > 255 {
 		return nil, fmt.Errorf("%w: %d", ErrInvalidBlockSize, blockSize)
 	}

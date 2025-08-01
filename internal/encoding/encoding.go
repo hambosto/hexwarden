@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	headerSize    = 4
-	maxdataShards = 1 << 30
+	headerSize = 4
+	maxDataLen = 1 << 30
 )
 
 var (
@@ -22,45 +22,49 @@ var (
 
 // Encoder handles Reed-Solomon encoding and decoding operations.
 type Encoder struct {
-	dataShards   int                 // data shards
-	parityShards int                 // parity shards
-	encoder      reedsolomon.Encoder // reed solomon encoder
+	dataShards   int
+	parityShards int
+	encoder      reedsolomon.Encoder
 }
 
 // NewEncoder creates a new Reed-Solomon encoder with the specified number of data and parity shards.
-func NewEncoder(dataShards, parityShards int) (*Encoder, error) {
+func New(dataShards, parityShards int) (*Encoder, error) {
 	if dataShards <= 0 {
 		return nil, ErrInvalidDataShards
 	}
-
 	if parityShards <= 0 {
 		return nil, ErrInvalidParityShards
 	}
 
-	encoder, err := reedsolomon.New(dataShards, parityShards)
+	enc, err := reedsolomon.New(dataShards, parityShards)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create reed-solomon encoder: %w", err)
 	}
 
-	return &Encoder{dataShards: dataShards, parityShards: parityShards, encoder: encoder}, nil
+	return &Encoder{
+		dataShards:   dataShards,
+		parityShards: parityShards,
+		encoder:      enc,
+	}, nil
 }
 
 // Encode encodes the input data using Reed-Solomon encoding.
 func (e *Encoder) Encode(data []byte) ([]byte, error) {
 	if !isValidDataSize(data) {
-		return nil, fmt.Errorf("%w: must be between 1 and %d bytes", ErrDataSize, maxdataShards)
+		return nil, fmt.Errorf("%w: must be between 1 and %d bytes", ErrDataSize, maxDataLen)
 	}
 
 	shards := e.splitIntoShards(data)
 	if err := e.encoder.Encode(shards); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("encoding failed: %w", err)
 	}
 
 	return e.combineShards(shards), nil
 }
 
+// Decode decodes the Reed-Solomon encoded data.
 func (e *Encoder) Decode(encoded []byte) ([]byte, error) {
-	totalShards := (e.dataShards + e.parityShards)
+	totalShards := e.dataShards + e.parityShards
 
 	if len(encoded) == 0 || len(encoded)%totalShards != 0 {
 		return nil, ErrEncodedDataSize
@@ -69,7 +73,7 @@ func (e *Encoder) Decode(encoded []byte) ([]byte, error) {
 	shards := e.splitEncodedData(encoded)
 
 	if err := e.encoder.Reconstruct(shards); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("reconstruction failed: %w", err)
 	}
 
 	return e.extractData(shards)
@@ -77,8 +81,8 @@ func (e *Encoder) Decode(encoded []byte) ([]byte, error) {
 
 // splitIntoShards splits input data into shards for encoding.
 func (e *Encoder) splitIntoShards(data []byte) [][]byte {
-	totalShards := (e.dataShards + e.parityShards)
-	shardSize := (len(data) + e.dataShards - 1) / e.parityShards
+	totalShards := e.dataShards + e.parityShards
+	shardSize := (len(data) + e.dataShards - 1) / e.dataShards
 
 	shards := make([][]byte, totalShards)
 	for i := range shards {
@@ -115,11 +119,11 @@ func (e *Encoder) combineShards(shards [][]byte) []byte {
 		return nil
 	}
 
-	shardsSize := len(shards[0])
-	result := make([]byte, shardsSize*len(shards))
+	shardSize := len(shards[0])
+	result := make([]byte, shardSize*len(shards))
 
-	for i, shards := range shards {
-		copy(result[i*shardsSize:], shards)
+	for i, shard := range shards {
+		copy(result[i*shardSize:], shard)
 	}
 
 	return result
@@ -131,8 +135,8 @@ func (e *Encoder) extractData(shards [][]byte) ([]byte, error) {
 		return nil, ErrCorruptedData
 	}
 
-	shardsSize := len(shards[0])
-	combined := make([]byte, 0, shardsSize*e.dataShards)
+	shardSize := len(shards[0])
+	combined := make([]byte, 0, shardSize*e.dataShards)
 
 	for i := 0; i < e.dataShards; i++ {
 		combined = append(combined, shards[i]...)
@@ -143,5 +147,5 @@ func (e *Encoder) extractData(shards [][]byte) ([]byte, error) {
 
 // validateDataSize validates the input data size.
 func isValidDataSize(data []byte) bool {
-	return len(data) != 0 && len(data) <= maxdataShards
+	return len(data) != 0 && len(data) <= maxDataLen
 }

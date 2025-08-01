@@ -15,14 +15,14 @@ var (
 	ErrDecryptionFailed = errors.New("failed to decrypt ciphertext")
 )
 
-// AESCipher provides AES-GCM encryption and decryption.
-type AESCipher struct {
+// Cipher provides AES-GCM encryption and decryption.
+type Cipher struct {
 	aead cipher.AEAD
 }
 
 // New creates a new Cipher with the given key.
 // The key must be 16, 24, or 32 bytes for AES-128, AES-192, or AES-256.
-func New(key []byte) (*AESCipher, error) {
+func New(key []byte) (*Cipher, error) {
 	if !isValidKeySize(len(key)) {
 		return nil, ErrInvalidKeySize
 	}
@@ -37,11 +37,11 @@ func New(key []byte) (*AESCipher, error) {
 		return nil, err
 	}
 
-	return &AESCipher{aead: aead}, nil
+	return &Cipher{aead: aead}, nil
 }
 
 // Encrypt encrypts the plaintext and returns the ciphertext with nonce prepended.
-func (c *AESCipher) Encrypt(plaintext []byte) ([]byte, error) {
+func (c *Cipher) Encrypt(plaintext []byte) ([]byte, error) {
 	if len(plaintext) == 0 {
 		return nil, ErrEmptyPlaintext
 	}
@@ -56,7 +56,7 @@ func (c *AESCipher) Encrypt(plaintext []byte) ([]byte, error) {
 }
 
 // Decrypt decrypts the ciphertext (which should have nonce prepended) and returns the plaintext.
-func (c *AESCipher) Decrypt(ciphertext []byte) ([]byte, error) {
+func (c *Cipher) Decrypt(ciphertext []byte) ([]byte, error) {
 	if len(ciphertext) == 0 {
 		return nil, ErrEmptyCiphertext
 	}

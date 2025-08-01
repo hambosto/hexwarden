@@ -8,19 +8,37 @@ import (
 	"io"
 )
 
-// Compression handles zlib compression and decompression using best compression
-type Compression struct{}
+// Compression levels
+const (
+	LevelNoCompression      = zlib.NoCompression
+	LevelBestSpeed          = zlib.BestSpeed
+	LevelBestCompression    = zlib.BestCompression
+	LevelDefaultCompression = zlib.DefaultCompression
+	LevelHuffmanOnly        = zlib.HuffmanOnly
+)
 
-// New creates a new Compressor
-func New() *Compression {
-	return &Compression{}
+// Compression handles zlib compression and decompression
+type Compression struct {
+	level int
 }
 
-// Compress compresses the input data using zlib with best compression
-func (c *Compression) Compress(data []byte) ([]byte, error) {
-	var buf bytes.Buffer
+// New creates a new Compressor with the specified compression level
+func New(level int) (*Compression, error) {
+	// Validate compression level
+	if level < zlib.HuffmanOnly || level > zlib.BestCompression {
+		return nil, fmt.Errorf("invalid compression level: %d (valid range: %d to %d)",
+			level, zlib.HuffmanOnly, zlib.BestCompression)
+	}
 
-	writer, err := zlib.NewWriterLevel(&buf, zlib.BestCompression)
+	return &Compression{level: level}, nil
+}
+
+// Compress compresses the input data using zlib with the configured compression level
+// The output includes a 4-byte header with the compressed data size
+func (c *Compression) Compress(data []byte) ([]byte, error) {
+	var compressBuf bytes.Buffer
+
+	writer, err := zlib.NewWriterLevel(&compressBuf, c.level)
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +51,22 @@ func (c *Compression) Compress(data []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	return buf.Bytes(), nil
+	compressedData := compressBuf.Bytes()
+
+	// Create final buffer with size header + compressed data
+	var finalBuf bytes.Buffer
+
+	// Write the compressed size as a 4-byte big-endian header
+	if err := binary.Write(&finalBuf, binary.BigEndian, uint32(len(compressedData))); err != nil {
+		return nil, fmt.Errorf("failed to write size header: %w", err)
+	}
+
+	// Write the compressed data
+	if _, err := finalBuf.Write(compressedData); err != nil {
+		return nil, fmt.Errorf("failed to write compressed data: %w", err)
+	}
+
+	return finalBuf.Bytes(), nil
 }
 
 // Decompress decompresses zlib compressed data
