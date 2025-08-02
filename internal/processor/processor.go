@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	minKeyLength = 64
+	minKeyLength = 32
 	cipherKeyLen = 32
 	encodingBase = 4
 	encodingPow  = 10

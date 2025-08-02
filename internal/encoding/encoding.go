@@ -8,7 +8,6 @@ import (
 )
 
 const (
-	headerSize = 4
 	maxDataLen = 1 << 30
 )
 
@@ -27,7 +26,7 @@ type Encoder struct {
 	encoder      reedsolomon.Encoder
 }
 
-// NewEncoder creates a new Reed-Solomon encoder with the specified number of data and parity shards.
+// New creates a new Reed-Solomon encoder with the specified number of data and parity shards.
 func New(dataShards, parityShards int) (*Encoder, error) {
 	if dataShards <= 0 {
 		return nil, ErrInvalidDataShards

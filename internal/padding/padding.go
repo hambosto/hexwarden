@@ -1,4 +1,3 @@
-// Package padding provides PKCS#7 padding functionality with length headers.
 package padding
 
 import (
@@ -82,8 +81,7 @@ func (p *Padder) Unpad(data []byte) ([]byte, error) {
 	paddingStart := len(data) - paddingLen
 	for i := paddingStart; i < len(data); i++ {
 		if data[i] != byte(paddingLen) {
-			return nil, fmt.Errorf("%w: incorrect padding byte at position %d",
-				ErrInvalidPadding, i)
+			return nil, fmt.Errorf("%w: incorrect padding byte at position %d", ErrInvalidPadding, i)
 		}
 	}
 

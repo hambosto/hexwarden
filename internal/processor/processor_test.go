@@ -63,7 +63,7 @@ func TestNew(t *testing.T) {
 
 func TestProcessor_EncryptDecrypt(t *testing.T) {
 	// Generate a valid key
-	key := make([]byte, 64)
+	key := make([]byte, 32)
 	if _, err := rand.Read(key); err != nil {
 		t.Fatalf("failed to generate random key: %v", err)
 	}
@@ -131,7 +131,7 @@ func TestProcessor_EncryptDecrypt(t *testing.T) {
 }
 
 func TestProcessor_EncryptDecrypt_LargeData(t *testing.T) {
-	key := make([]byte, 64)
+	key := make([]byte, 32)
 	if _, err := rand.Read(key); err != nil {
 		t.Fatalf("failed to generate random key: %v", err)
 	}
@@ -163,7 +163,7 @@ func TestProcessor_EncryptDecrypt_LargeData(t *testing.T) {
 }
 
 func TestProcessor_Decrypt_InvalidData(t *testing.T) {
-	key := make([]byte, 64)
+	key := make([]byte, 32)
 	if _, err := rand.Read(key); err != nil {
 		t.Fatalf("failed to generate random key: %v", err)
 	}
@@ -202,7 +202,7 @@ func TestProcessor_Decrypt_InvalidData(t *testing.T) {
 }
 
 func TestProcessor_MultipleInstances(t *testing.T) {
-	key := make([]byte, 64)
+	key := make([]byte, 32)
 	if _, err := rand.Read(key); err != nil {
 		t.Fatalf("failed to generate random key: %v", err)
 	}
@@ -238,7 +238,7 @@ func TestProcessor_MultipleInstances(t *testing.T) {
 }
 
 func BenchmarkProcessor_Encrypt(b *testing.B) {
-	key := make([]byte, 64)
+	key := make([]byte, 32)
 	if _, err := rand.Read(key); err != nil {
 		b.Fatalf("failed to generate random key: %v", err)
 	}
@@ -263,7 +263,7 @@ func BenchmarkProcessor_Encrypt(b *testing.B) {
 }
 
 func BenchmarkProcessor_Decrypt(b *testing.B) {
-	key := make([]byte, 64)
+	key := make([]byte, 32)
 	if _, err := rand.Read(key); err != nil {
 		b.Fatalf("failed to generate random key: %v", err)
 	}

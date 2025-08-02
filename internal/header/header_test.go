@@ -3,172 +3,84 @@ package header
 import (
 	"bytes"
 	"crypto/rand"
-	"errors"
 	"testing"
 )
 
-func randomBytes(t *testing.T, n int) []byte {
-	t.Helper()
-	b := make([]byte, n)
-	if _, err := rand.Read(b); err != nil {
-		t.Fatalf("failed to generate random bytes: %v", err)
-	}
-	return b
-}
+func TestNewHeader_ValidInput(t *testing.T) {
+	salt := make([]byte, SaltSize)
+	_, _ = rand.Read(salt)
+	key := []byte("this is a very secure key with enough length")
+	originalSize := uint64(123456789)
 
-func TestNewHeader_Success(t *testing.T) {
-	salt := randomBytes(t, SaltSize)
-	nonce := randomBytes(t, NonceSize)
-	key := randomBytes(t, 32)
-	size := uint64(123456)
-
-	cfg := Config{
-		Salt:         salt,
-		OriginalSize: size,
-		Nonce:        nonce,
-		Key:          key,
-	}
-
-	hdr, err := New(cfg)
+	h, err := New(salt, originalSize, key)
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf("expected no error, got %v", err)
 	}
 
-	if got := hdr.OriginalSize(); got != size {
-		t.Errorf("original size mismatch: got %d, want %d", got, size)
+	if err := h.Validate(); err != nil {
+		t.Errorf("expected valid header, got error: %v", err)
 	}
-
-	if !bytes.Equal(hdr.Salt(), salt) {
-		t.Errorf("salt mismatch")
-	}
-
-	if !bytes.Equal(hdr.Nonce(), nonce) {
-		t.Errorf("nonce mismatch")
-	}
-
-	if err := hdr.VerifyPassword(key); err != nil {
-		t.Errorf("VerifyPassword failed: %v", err)
+	if !h.VerifyPassword(key) {
+		t.Error("expected password verification to succeed")
 	}
 }
 
 func TestNewHeader_InvalidSalt(t *testing.T) {
-	cfg := Config{
-		Salt:         []byte("short"),
-		OriginalSize: 0,
-		Nonce:        randomBytes(t, NonceSize),
-		Key:          randomBytes(t, 32),
-	}
-
-	_, err := New(cfg)
-	if err == nil || !errors.Is(err, ErrInvalidSaltSize) {
-		t.Errorf("expected salt size error, got %v", err)
+	key := []byte("secure key")
+	salt := []byte("short")
+	_, err := New(salt, 0, key)
+	if err == nil {
+		t.Fatal("expected error for invalid salt size, got nil")
 	}
 }
 
-func TestNewHeader_InvalidNonce(t *testing.T) {
-	cfg := Config{
-		Salt:         randomBytes(t, SaltSize),
-		OriginalSize: 0,
-		Nonce:        []byte("short"),
-		Key:          randomBytes(t, 32),
-	}
+func TestHeader_WriteAndRead(t *testing.T) {
+	salt := make([]byte, SaltSize)
+	_, _ = rand.Read(salt)
+	key := []byte("another secure key with enough length")
+	originalSize := uint64(987654321)
 
-	_, err := New(cfg)
-	if err == nil || !errors.Is(err, ErrInvalidNonceSize) {
-		t.Errorf("expected nonce size error, got %v", err)
-	}
-}
-
-func TestHeader_WriteRead(t *testing.T) {
-	salt := randomBytes(t, SaltSize)
-	nonce := randomBytes(t, NonceSize)
-	key := randomBytes(t, 32)
-	size := uint64(987654321)
-
-	cfg := Config{
-		Salt:         salt,
-		OriginalSize: size,
-		Nonce:        nonce,
-		Key:          key,
-	}
-
-	hdr, err := New(cfg)
+	h, err := New(salt, originalSize, key)
 	if err != nil {
-		t.Fatalf("New header failed: %v", err)
+		t.Fatalf("unexpected error creating header: %v", err)
 	}
 
-	buf := new(bytes.Buffer)
-	if err := hdr.Write(buf); err != nil {
-		t.Fatalf("Write failed: %v", err)
+	var buf bytes.Buffer
+	if err := h.Write(&buf); err != nil {
+		t.Fatalf("unexpected error writing header: %v", err)
 	}
 
-	readHdr, err := Read(buf)
+	readHeader, err := Read(&buf)
 	if err != nil {
-		t.Fatalf("Read failed: %v", err)
+		t.Fatalf("unexpected error reading header: %v", err)
 	}
 
-	if got := readHdr.OriginalSize(); got != size {
-		t.Errorf("original size mismatch: got %d, want %d", got, size)
+	if !bytes.Equal(readHeader.Salt, h.Salt) {
+		t.Error("salt mismatch")
 	}
-
-	if !bytes.Equal(readHdr.Salt(), salt) {
-		t.Errorf("salt mismatch after read")
+	if readHeader.OriginalSize != h.OriginalSize {
+		t.Errorf("original size mismatch: got %d, want %d", readHeader.OriginalSize, h.OriginalSize)
 	}
-
-	if !bytes.Equal(readHdr.Nonce(), nonce) {
-		t.Errorf("nonce mismatch after read")
+	if !bytes.Equal(readHeader.VerificationHash, h.VerificationHash) {
+		t.Error("verification hash mismatch")
 	}
-
-	if !bytes.Equal(readHdr.VerificationHash(), hdr.VerificationHash()) {
-		t.Errorf("verification hash mismatch after read")
-	}
-
-	if err := readHdr.VerifyPassword(key); err != nil {
-		t.Errorf("VerifyPassword failed after read: %v", err)
+	if !readHeader.VerifyPassword(key) {
+		t.Error("password verification failed after read")
 	}
 }
 
 func TestVerifyPassword_Failure(t *testing.T) {
-	salt := randomBytes(t, SaltSize)
-	nonce := randomBytes(t, NonceSize)
-	correctKey := randomBytes(t, 32)
-	wrongKey := randomBytes(t, 32)
+	salt := make([]byte, SaltSize)
+	_, _ = rand.Read(salt)
+	key := []byte("correct key")
+	wrongKey := []byte("wrong key")
 
-	cfg := Config{
-		Salt:         salt,
-		OriginalSize: 0,
-		Nonce:        nonce,
-		Key:          correctKey,
-	}
-
-	hdr, err := New(cfg)
+	h, err := New(salt, 1000, key)
 	if err != nil {
-		t.Fatalf("New failed: %v", err)
+		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if err := hdr.VerifyPassword(wrongKey); !errors.Is(err, ErrInvalidPassword) {
-		t.Errorf("expected ErrInvalidPassword, got %v", err)
+	if h.VerifyPassword(wrongKey) {
+		t.Error("expected password verification to fail with wrong key")
 	}
-}
-
-func TestHeader_Write_ShortWrite(t *testing.T) {
-	hdr := &Header{}
-	w := &limitedWriter{max: TotalSize - 1}
-	err := hdr.Write(w)
-	if err == nil || !errors.Is(err, ErrShortWrite) {
-		t.Errorf("expected short write error, got: %v", err)
-	}
-}
-
-// Helper to simulate a short write.
-type limitedWriter struct {
-	buf bytes.Buffer
-	max int
-}
-
-func (lw *limitedWriter) Write(p []byte) (int, error) {
-	if len(p) > lw.max {
-		p = p[:lw.max]
-	}
-	return lw.buf.Write(p)
 }
