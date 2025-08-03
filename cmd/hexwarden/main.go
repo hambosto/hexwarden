@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/hambosto/hexwarden/internal/app"
 	"github.com/hambosto/hexwarden/internal/files"
@@ -24,29 +23,24 @@ func main() {
 
 	operation, err := prompt.GetProcessingMode()
 	if err != nil {
-		fmt.Printf("Error: failed to get operation: %v\n", err)
-		os.Exit(1)
+		fmt.Printf("Error: failed to get operation: %v", err)
 	}
 
 	files, err := fileFinder.FindEligibleFiles(files.ProcessorMode(operation))
 	if err != nil {
-		fmt.Printf("Error: failed to list files: %v\n", err)
-		os.Exit(1)
+		fmt.Printf("Error: failed to list files: %v", err)
 	}
 
 	if len(files) == 0 {
 		fmt.Println("No eligible files found.")
-		os.Exit(1)
 	}
 
 	selectedFile, err := prompt.ChooseFile(files)
 	if err != nil {
-		fmt.Printf("Error: failed to select file: %v\n", err)
-		os.Exit(1)
+		fmt.Printf("Error: failed to select file: %v", err)
 	}
 
 	if err := app.ProcessFile(selectedFile, operation); err != nil {
-		fmt.Printf("Error: %v\n", err)
-		os.Exit(1)
+		fmt.Printf("Error: %v", err)
 	}
 }

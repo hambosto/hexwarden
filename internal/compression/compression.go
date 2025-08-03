@@ -26,8 +26,7 @@ type Compression struct {
 func New(level int) (*Compression, error) {
 	// Validate compression level
 	if level < zlib.HuffmanOnly || level > zlib.BestCompression {
-		return nil, fmt.Errorf("invalid compression level: %d (valid range: %d to %d)",
-			level, zlib.HuffmanOnly, zlib.BestCompression)
+		return nil, fmt.Errorf("invalid compression level: %d (valid range: %d to %d)", level, zlib.HuffmanOnly, zlib.BestCompression)
 	}
 
 	return &Compression{level: level}, nil

@@ -100,7 +100,7 @@ func secureDelete(path string, passes int) error {
 		return fmt.Errorf("failed to get file info: %w", err)
 	}
 
-	for pass := 0; pass < passes; pass++ {
+	for pass := range passes {
 		if err := randomOverwrite(file, info.Size()); err != nil {
 			return fmt.Errorf("secure overwrite pass %d failed: %w", pass+1, err)
 		}

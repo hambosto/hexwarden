@@ -253,8 +253,7 @@ func BenchmarkProcessor_Encrypt(b *testing.B) {
 		b.Fatalf("failed to generate random data: %v", err)
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, err := processor.Encrypt(data)
 		if err != nil {
 			b.Fatalf("encryption failed: %v", err)

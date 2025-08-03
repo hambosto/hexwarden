@@ -42,7 +42,7 @@ git clone https://github.com/hambosto/hexwarden.git
 cd hexwarden
 
 # Build the project
-go build -o hexwarden
+go build -o hexwarden cmd/hexwarden/main.go
 
 # (Optional) Install globally
 go install
@@ -61,13 +61,13 @@ go install
 3. Select file:
    - Navigate through available files using arrow keys
    - For encryption: shows all non-encrypted files
-   - For decryption: shows only `.encrypted` files
+   - For decryption: shows only `.hex` files
 
 The program will process the selected file and display progress in real-time.
 
 ### Encrypted File Format
 
-- Encrypted files are saved with the `.encrypted` extension
+- Encrypted files are saved with the `.hex` extension
 - Original filename is preserved when decrypting
 - Files are processed in chunks for efficient memory usage
 

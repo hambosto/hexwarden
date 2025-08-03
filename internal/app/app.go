@@ -13,128 +13,128 @@ import (
 	"github.com/hambosto/hexwarden/internal/worker"
 )
 
-// FileHandler defines the interface for file operations.
-type FileHandler interface {
-	Remove(path string, option ui.DeleteOption) error
-	CreateFile(path string) (*os.File, error)
-	ValidatePath(path string, mustExist bool) error
-	OpenFile(path string) (*os.File, os.FileInfo, error)
-}
-
-// UserInterface defines the interface for user interactions.
-type UserInterface interface {
-	ConfirmFileOverwrite(path string) (bool, error)
-	GetEncryptionPassword() (string, error)
-	ConfirmFileRemoval(path string, message string) (bool, ui.DeleteOption, error)
-	GetProcessingMode() (ui.ProcessorMode, error)
-	ChooseFile(files []string) (string, error)
-}
-
-// Config holds the configuration for processing operations.
-type Config struct {
-	SourcePath      string
-	DestinationPath string
-	Password        string
-	Mode            ui.ProcessorMode
-}
-
-// App encapsulates the application logic with its dependencies.
+// App handles file encryption and decryption operations.
 type App struct {
-	files FileHandler
-	ui    UserInterface
+	fileManager *files.FileManager
+	prompt      *ui.Prompt
 }
 
-// New creates a new App instance with the provided dependencies.
-func NewApp(files FileHandler, ui UserInterface) *App {
+// New creates a new App instance.
+func NewApp(fm *files.FileManager, p *ui.Prompt) *App {
 	return &App{
-		files: files,
-		ui:    ui,
+		fileManager: fm,
+		prompt:      p,
 	}
 }
 
-// Process handles the main processing logic based on the provided configuration.
-func (a *App) Process(cfg Config) error {
-	if err := a.validate(cfg); err != nil {
-		return err
-	}
-
-	switch cfg.Mode {
-	case ui.ModeEncrypt:
-		return a.encrypt(cfg)
-	case ui.ModeDecrypt:
-		return a.decrypt(cfg)
-	default:
-		return fmt.Errorf("unsupported operation mode: %s", cfg.Mode)
-	}
-}
-
-// ProcessFile is a convenience method that processes a single file.
+// ProcessFile encrypts or decrypts a file based on the mode.
 func (a *App) ProcessFile(inputPath string, mode ui.ProcessorMode) error {
 	outputPath := getOutputPath(inputPath, mode)
 
-	cfg := Config{
-		SourcePath:      inputPath,
-		DestinationPath: outputPath,
-		Mode:            mode,
+	// Validate paths
+	if err := a.fileManager.ValidatePath(inputPath, true); err != nil {
+		return fmt.Errorf("source validation failed: %w", err)
 	}
 
-	return a.Process(cfg)
+	if err := a.fileManager.ValidatePath(outputPath, false); err != nil {
+		if confirm, err := a.prompt.ConfirmFileOverwrite(outputPath); err != nil || !confirm {
+			return fmt.Errorf("operation cancelled")
+		}
+	}
+
+	var err error
+	switch mode {
+	case ui.ModeEncrypt:
+		err = a.encryptFile(inputPath, outputPath)
+	case ui.ModeDecrypt:
+		err = a.decryptFile(inputPath, outputPath)
+	default:
+		return fmt.Errorf("unsupported mode: %s", mode)
+	}
+
+	if err != nil {
+		if err := os.Remove(outputPath); err != nil {
+			return fmt.Errorf("failed to remove incomplete file: %w", err)
+		}
+		return err
+	}
+
+	// Ask to delete source file
+	fileType := "original"
+	if mode == ui.ModeDecrypt {
+		fileType = "encrypted"
+	}
+
+	if shouldDelete, deleteType, err := a.prompt.ConfirmFileRemoval(inputPath, fmt.Sprintf("Delete %s file", fileType)); err == nil && shouldDelete {
+		if err := a.fileManager.Remove(inputPath, deleteType); err != nil {
+			return fmt.Errorf("file deletion failed: %w", err)
+		}
+	}
+
+	fmt.Printf("File processed successfully: %s\n", outputPath)
+	return nil
 }
 
-// encrypt handles the encryption workflow.
-func (a *App) encrypt(cfg Config) error {
-	srcFile, srcInfo, err := a.files.OpenFile(cfg.SourcePath)
+// encryptFile handles file encryption.
+func (a *App) encryptFile(srcPath, destPath string) error {
+	srcFile, err := os.Open(srcPath)
 	if err != nil {
-		return fmt.Errorf("failed to open source file: %w", err)
+		return fmt.Errorf("failed to open source: %w", err)
 	}
 	defer srcFile.Close()
 
-	destFile, err := a.files.CreateFile(cfg.DestinationPath)
+	srcInfo, err := srcFile.Stat()
 	if err != nil {
-		return fmt.Errorf("failed to create destination file: %w", err)
-	}
-	defer func() {
-		if closeErr := destFile.Close(); closeErr != nil {
-			fmt.Printf("Warning: failed to close destination file: %v\n", closeErr)
-		}
-	}()
-
-	password := cfg.Password
-	if password == "" {
-		password, err = a.ui.GetEncryptionPassword()
-		if err != nil {
-			return fmt.Errorf("password prompt failed: %w", err)
-		}
+		return fmt.Errorf("failed to get file info: %w", err)
 	}
 
-	key, salt, err := deriveKey(password)
+	destFile, err := os.Create(destPath)
+	if err != nil {
+		return fmt.Errorf("failed to create destination: %w", err)
+	}
+	defer destFile.Close()
+
+	password, err := a.prompt.GetEncryptionPassword()
+	if err != nil {
+		return fmt.Errorf("password prompt failed: %w", err)
+	}
+
+	salt, err := kdf.GenerateSalt()
+	if err != nil {
+		return fmt.Errorf("salt generation failed: %w", err)
+	}
+
+	key, err := kdf.DeriveKey([]byte(password), salt)
 	if err != nil {
 		return fmt.Errorf("key derivation failed: %w", err)
 	}
 
-	fmt.Printf("Encrypting %s...\n", cfg.SourcePath)
+	fmt.Printf("Encrypting %s...\n", srcPath)
 
-	if err := a.runEncryption(srcFile, destFile, srcInfo, key, salt); err != nil {
-		// Clean up incomplete file on error
-		if removeErr := os.Remove(cfg.DestinationPath); removeErr != nil {
-			return fmt.Errorf("encryption failed and couldn't clean up incomplete file: %v (original error: %w)", removeErr, err)
-		}
-		return fmt.Errorf("encryption failed: %w", err)
+	// Write header
+	hdr, err := header.New(salt, uint64(srcInfo.Size()), key)
+	if err != nil {
+		return fmt.Errorf("header creation failed: %w", err)
 	}
 
-	if err := a.cleanupSource(cfg.SourcePath, true); err != nil {
-		return fmt.Errorf("source cleanup failed: %w", err)
+	if err := hdr.Write(destFile); err != nil {
+		return fmt.Errorf("header writing failed: %w", err)
 	}
 
-	fmt.Printf("File encrypted successfully: %s\n", cfg.DestinationPath)
-	return nil
+	// Encrypt data
+	w, err := worker.New(worker.Config{Key: key, Processing: worker.Encryption})
+	if err != nil {
+		return fmt.Errorf("failed to create worker: %w", err)
+	}
+
+	return w.Process(srcFile, destFile, srcInfo.Size())
 }
 
-// decrypt handles the decryption workflow.
-func (a *App) decrypt(cfg Config) error {
-	srcFile, _, err := a.files.OpenFile(cfg.SourcePath)
+// decryptFile handles file decryption.
+func (a *App) decryptFile(srcPath, destPath string) error {
+	srcFile, err := os.Open(srcPath)
 	if err != nil {
-		return fmt.Errorf("failed to open source file: %w", err)
+		return fmt.Errorf("failed to open source: %w", err)
 	}
 	defer srcFile.Close()
 
@@ -143,12 +143,9 @@ func (a *App) decrypt(cfg Config) error {
 		return fmt.Errorf("header reading failed: %w", err)
 	}
 
-	password := cfg.Password
-	if password == "" {
-		password, err = a.ui.GetEncryptionPassword()
-		if err != nil {
-			return fmt.Errorf("password prompt failed: %w", err)
-		}
+	password, err := a.prompt.GetEncryptionPassword()
+	if err != nil {
+		return fmt.Errorf("password prompt failed: %w", err)
 	}
 
 	key, err := kdf.DeriveKey([]byte(password), hdr.Salt)
@@ -161,142 +158,27 @@ func (a *App) decrypt(cfg Config) error {
 	}
 
 	if hdr.OriginalSize > math.MaxInt64 {
-		return fmt.Errorf("file too large: size exceeds maximum allowed value for processing")
+		return fmt.Errorf("file too large")
 	}
 
-	destFile, err := a.files.CreateFile(cfg.DestinationPath)
+	destFile, err := os.Create(destPath)
 	if err != nil {
-		return fmt.Errorf("failed to create destination file: %w", err)
+		return fmt.Errorf("failed to create destination: %w", err)
 	}
-	defer func() {
-		if closeErr := destFile.Close(); closeErr != nil {
-			fmt.Printf("Warning: failed to close destination file: %v\n", closeErr)
-		}
-	}()
+	defer destFile.Close()
 
-	fmt.Printf("Decrypting %s...\n", cfg.SourcePath)
+	fmt.Printf("Decrypting %s...\n", srcPath)
 
-	if err := a.runDecryption(srcFile, destFile, key, *hdr); err != nil {
-		// Clean up incomplete file on error
-		if removeErr := os.Remove(cfg.DestinationPath); removeErr != nil {
-			return fmt.Errorf("decryption failed and couldn't clean up incomplete file: %v (original error: %w)", removeErr, err)
-		}
-		return fmt.Errorf("decryption failed: %w", err)
-	}
-
-	if err := a.cleanupSource(cfg.SourcePath, false); err != nil {
-		return fmt.Errorf("source cleanup failed: %w", err)
-	}
-
-	fmt.Printf("File decrypted successfully: %s\n", cfg.DestinationPath)
-	return nil
-}
-
-// runEncryption performs the actual encryption process.
-func (a *App) runEncryption(src, dest *os.File, srcInfo os.FileInfo, key, salt []byte) error {
-	w, err := worker.New(worker.Config{
-		Key:        key,
-		Processing: worker.Encryption,
-	})
+	// Decrypt data
+	w, err := worker.New(worker.Config{Key: key, Processing: worker.Decryption})
 	if err != nil {
 		return fmt.Errorf("failed to create worker: %w", err)
 	}
 
-	fileSize := srcInfo.Size()
-	if fileSize < 0 {
-		return fmt.Errorf("invalid file size: %d", fileSize)
-	}
-
-	hdr, err := header.New(salt, uint64(fileSize), key)
-	if err != nil {
-		return fmt.Errorf("header creation failed: %w", err)
-	}
-
-	if err := hdr.Write(dest); err != nil {
-		return fmt.Errorf("header writing failed: %w", err)
-	}
-
-	if err := w.Process(src, dest, fileSize); err != nil {
-		return fmt.Errorf("encryption processing failed: %w", err)
-	}
-
-	return nil
+	return w.Process(srcFile, destFile, int64(hdr.OriginalSize))
 }
 
-// runDecryption performs the actual decryption process.
-func (a *App) runDecryption(src, dest *os.File, key []byte, hdr header.Header) error {
-	w, err := worker.New(worker.Config{
-		Key:        key,
-		Processing: worker.Decryption,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to create worker: %w", err)
-	}
-
-	originalSize := int64(hdr.OriginalSize)
-	if err := w.Process(src, dest, originalSize); err != nil {
-		return fmt.Errorf("decryption processing failed: %w", err)
-	}
-
-	return nil
-}
-
-// validate ensures the configuration is valid and handles file overwrite confirmation.
-func (a *App) validate(cfg Config) error {
-	if err := a.files.ValidatePath(cfg.SourcePath, true); err != nil {
-		return fmt.Errorf("source validation failed: %w", err)
-	}
-
-	if err := a.files.ValidatePath(cfg.DestinationPath, false); err != nil {
-		confirm, confirmErr := a.ui.ConfirmFileOverwrite(cfg.DestinationPath)
-		if confirmErr != nil {
-			return fmt.Errorf("overwrite confirmation failed: %w", confirmErr)
-		}
-		if !confirm {
-			return fmt.Errorf("operation cancelled by user")
-		}
-	}
-
-	return nil
-}
-
-// cleanupSource handles the cleanup of source files after processing.
-func (a *App) cleanupSource(path string, isEncryption bool) error {
-	fileType := "original"
-	if !isEncryption {
-		fileType = "encrypted"
-	}
-
-	shouldDelete, deleteType, err := a.ui.ConfirmFileRemoval(path, fmt.Sprintf("Delete %s file", fileType))
-	if err != nil {
-		return fmt.Errorf("deletion prompt failed: %w", err)
-	}
-
-	if shouldDelete {
-		if err := a.files.Remove(path, deleteType); err != nil {
-			return fmt.Errorf("file deletion failed: %w", err)
-		}
-	}
-
-	return nil
-}
-
-// deriveKey generates a salt and derives a key from the password.
-func deriveKey(password string) (key, salt []byte, err error) {
-	salt, err = kdf.GenerateSalt()
-	if err != nil {
-		return nil, nil, fmt.Errorf("salt generation failed: %w", err)
-	}
-
-	key, err = kdf.DeriveKey([]byte(password), salt)
-	if err != nil {
-		return nil, nil, fmt.Errorf("key derivation failed: %w", err)
-	}
-
-	return key, salt, nil
-}
-
-// getOutputPath determines the output file path based on the input path and mode.
+// getOutputPath determines output path based on mode.
 func getOutputPath(inputPath string, mode ui.ProcessorMode) string {
 	if mode == ui.ModeEncrypt {
 		return inputPath + files.FileExtension

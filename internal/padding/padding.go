@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"math"
 )
 
 var (
@@ -38,10 +39,11 @@ func New(blockSize int) (*Padder, error) {
 // Pad adds a 4-byte big-endian length header followed by PKCS#7 padding to data.
 // The length header contains the original data length as uint32.
 func (p *Padder) Pad(data []byte) ([]byte, error) {
-	const maxUint32 = 1<<32 - 1
+	dataLen := len(data)
 
-	if len(data) > maxUint32 {
-		return nil, fmt.Errorf("%w: %d bytes", ErrDataTooLarge, len(data))
+	// Gosec still barking about integer overflow :(
+	if dataLen > math.MaxUint32 {
+		return nil, fmt.Errorf("%w: %d bytes", ErrDataTooLarge, dataLen)
 	}
 
 	// Create length header

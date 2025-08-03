@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	DefaultChunkSize = 1024 * 1024
+	DefaultChunkSize = 1 * 1024 * 1024 // 1 MB
 	DefaultQueueSize = 100
 )
 
@@ -24,7 +24,7 @@ const (
 )
 
 var (
-	ErrInvalidKey = errors.New("key must be 64 bytes")
+	ErrInvalidKey = errors.New("key must be 32 bytes")
 	ErrNilStream  = errors.New("input and output streams must not be nil")
 	ErrCanceled   = errors.New("operation was canceled")
 )
@@ -76,7 +76,7 @@ func New(config Config) (*Worker, error) {
 
 	// Set defaults
 	if config.Concurrency <= 0 {
-		config.Concurrency = runtime.NumCPU()
+		config.Concurrency = runtime.NumCPU() * 2
 	}
 	if config.QueueSize <= 0 {
 		config.QueueSize = DefaultQueueSize
