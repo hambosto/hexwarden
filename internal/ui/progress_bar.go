@@ -4,10 +4,12 @@ import (
 	"github.com/schollz/progressbar/v3"
 )
 
+// ProgressBar wraps a progressbar.ProgressBar instance.
 type ProgressBar struct {
 	bar *progressbar.ProgressBar
 }
 
+// NewProgressBar creates a new progress bar with the given size and label.
 func NewProgressBar(size int64, label string) *ProgressBar {
 	bar := progressbar.NewOptions64(
 		size,
@@ -25,11 +27,10 @@ func NewProgressBar(size int64, label string) *ProgressBar {
 		}),
 	)
 
-	return &ProgressBar{
-		bar: bar,
-	}
+	return &ProgressBar{bar: bar}
 }
 
+// Add increments the progress bar by n and returns any error encountered.
 func (p *ProgressBar) Add(n int64) error {
 	return p.bar.Add64(n)
 }

@@ -1,34 +1,44 @@
 name: Release
+
 on:
   push:
     tags:
       - "v*"
+
 jobs:
   create_release:
+    name: Create GitHub Release
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.get_version.outputs.VERSION }}
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Get version
+
+      - name: Extract version from tag
         id: get_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-      - name: Generate changelog
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+
+      - name: Generate CHANGELOG
         run: |
-          git log $(git describe --tags --abbrev=0 HEAD^)..HEAD --pretty=format:"- %s" > CHANGELOG.md
+          set -euo pipefail
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^)
+          git log "$PREV_TAG"..HEAD --pretty=format:"- %s" > CHANGELOG.md
+          echo "CHANGELOG:"
           cat CHANGELOG.md
-      - name: Create Release
+
+      - name: Create GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create ${{ steps.get_version.outputs.VERSION }} \
-          --title "Release ${{ steps.get_version.outputs.VERSION }}" \
-          --notes-file CHANGELOG.md
+          gh release create "${{ steps.get_version.outputs.VERSION }}" \
+            --title "Release ${{ steps.get_version.outputs.VERSION }}" \
+            --notes-file CHANGELOG.md
 
   build_and_upload:
+    name: Build & Upload Binaries
     needs: create_release
     runs-on: ubuntu-latest
     strategy:
@@ -38,36 +48,70 @@ jobs:
             goarch: amd64
           - goos: windows
             goarch: arm64
-          - goos: darwin
-            goarch: amd64
-          - goos: darwin
-            goarch: arm64
           - goos: linux
             goarch: amd64
           - goos: linux
             goarch: arm64
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Set up Go
+
+      - name: Set up Go environment
         uses: actions/setup-go@v5
         with:
           go-version: 'stable'
           check-latest: true
-      - name: Build
+
+      - name: Build Go binary
+        id: build
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
-        id: build
+          VERSION: ${{ needs.create_release.outputs.version }}
         run: |
-          output_name="hexwarden-${{ needs.create_release.outputs.version }}-${{ matrix.goos }}-${{ matrix.goarch }}"
-          if [ "${{ matrix.goos }}" = "windows" ]; then
-            output_name+='.exe'
+          set -euo pipefail
+          FILENAME="hexwarden-${VERSION}-${GOOS}-${GOARCH}"
+          EXT=""
+          if [[ "$GOOS" == "windows" ]]; then
+            EXT=".exe"
           fi
-          CGO_ENABLED=0 go build -a -ldflags '-extldflags "-static" -s -w' -o "$output_name" .
-          echo "ASSET_NAME=$output_name" >> $GITHUB_OUTPUT
-      - name: Upload Release Asset
+
+          BINARY_NAME="${FILENAME}${EXT}"
+          OUTPUT_DIR=dist/${FILENAME}
+          mkdir -p "$OUTPUT_DIR"
+
+          CGO_ENABLED=0 go build -a -ldflags "-extldflags '-static' -s -w" -o "$OUTPUT_DIR/$BINARY_NAME" .
+
+          # Make *nix binaries executable
+          if [[ "$GOOS" != "windows" ]]; then
+            chmod +x "$OUTPUT_DIR/$BINARY_NAME"
+          fi
+
+          # Zip the binary
+          cd dist
+          zip -r "${FILENAME}.zip" "$FILENAME"
+          cd ..
+
+          echo "ASSET_NAME=dist/${FILENAME}.zip" >> "$GITHUB_OUTPUT"
+
+      - name: Upload binary asset to release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ needs.create_release.outputs.version }} ${{ steps.build.outputs.ASSET_NAME }}
+          gh release upload "${{ needs.create_release.outputs.version }}" \
+            "${{ steps.build.outputs.ASSET_NAME }}" \
+            --clobber
+
+      - name: Generate and upload SHA256 checksum
+        env:
+          VERSION: ${{ needs.create_release.outputs.version }}
+        run: |
+          ASSET="${{ steps.build.outputs.ASSET_NAME }}"
+          CHECKSUM_FILE="${ASSET}.sha256"
+          shasum -a 256 "$ASSET" > "$CHECKSUM_FILE"
+          gh release upload "$VERSION" "$CHECKSUM_FILE" --clobber

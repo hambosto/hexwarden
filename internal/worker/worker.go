@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -11,7 +12,8 @@ import (
 )
 
 const (
-	DefaultChunkSize = 1024 * 1024
+	DefaultChunkSize = 1 * 1024 * 1024 // 1 MB
+	DefaultQueueSize = 100
 )
 
 type Processing int
@@ -22,54 +24,79 @@ const (
 )
 
 var (
-	ErrInvalidKey = errors.New("key must be 64 bytes")
+	ErrInvalidKey = errors.New("key must be 32 bytes")
 	ErrNilStream  = errors.New("input and output streams must not be nil")
+	ErrCanceled   = errors.New("operation was canceled")
 )
 
 type Task struct {
 	Data  []byte
-	Index uint32
+	Index uint64
 }
 
 type TaskResult struct {
-	Index uint32
+	Index uint64
 	Data  []byte
 	Size  int
 	Err   error
 }
 
-type Worker struct {
-	processor   *processor.Processor
-	bar         *ui.ProgressBar
-	concurrency int
-	processing  Processing
+type Config struct {
+	Key         []byte
+	Processing  Processing
+	Concurrency int
+	QueueSize   int
+	ChunkSize   int
 }
 
-func New(key []byte, processing Processing) (*Worker, error) {
-	if len(key) != 64 {
+type Worker struct {
+	processor *processor.Processor
+	bar       *ui.ProgressBar
+	config    Config
+
+	// Channels
+	taskChan   chan Task
+	resultChan chan TaskResult
+
+	// Synchronization
+	ctx        context.Context
+	cancel     context.CancelFunc
+	workerPool *WorkerPool
+}
+
+func New(config Config) (*Worker, error) {
+	if len(config.Key) != 32 {
 		return nil, ErrInvalidKey
 	}
 
-	processor, err := processor.NewProcessor(key)
+	processor, err := processor.New(config.Key)
 	if err != nil {
-		return nil, fmt.Errorf("creating chunk processor: %w", err)
+		return nil, fmt.Errorf("creating processor: %w", err)
 	}
 
-	concurrency := max(runtime.NumCPU(), 1)
-	runtime.GOMAXPROCS(concurrency)
-
-	return &Worker{
-		processor:   processor,
-		concurrency: concurrency,
-		processing:  processing,
-	}, nil
-}
-
-func (w *Worker) WithConcurrency(count int) *Worker {
-	if count > 0 {
-		w.concurrency = count
+	// Set defaults
+	if config.Concurrency <= 0 {
+		config.Concurrency = runtime.NumCPU() * 2
 	}
-	return w
+	if config.QueueSize <= 0 {
+		config.QueueSize = DefaultQueueSize
+	}
+	if config.ChunkSize <= 0 {
+		config.ChunkSize = DefaultChunkSize
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	w := &Worker{
+		processor: processor,
+		config:    config,
+		ctx:       ctx,
+		cancel:    cancel,
+	}
+
+	w.workerPool = NewWorkerPool(config.Concurrency, w.processTask)
+
+	return w, nil
 }
 
 func (w *Worker) Process(input io.Reader, output io.Writer, totalSize int64) error {
@@ -78,18 +105,40 @@ func (w *Worker) Process(input io.Reader, output io.Writer, totalSize int64) err
 	}
 
 	label := "Encrypting..."
-	if w.processing != Encryption {
+	if w.config.Processing != Encryption {
 		label = "Decrypting..."
 	}
 
 	w.bar = ui.NewProgressBar(totalSize, label)
+
 	return w.runPipeline(input, output)
 }
 
-func (w *Worker) GetCipherNonce() []byte {
-	return w.processor.Cipher.GetNonce()
+func (w *Worker) processTask(task Task) TaskResult {
+	var (
+		output []byte
+		err    error
+	)
+
+	if w.config.Processing == Encryption {
+		output, err = w.processor.Encrypt(task.Data)
+	} else {
+		output, err = w.processor.Decrypt(task.Data)
+	}
+
+	size := len(task.Data)
+	if w.config.Processing != Encryption {
+		size = len(output)
+	}
+
+	return TaskResult{
+		Index: task.Index,
+		Data:  output,
+		Size:  size,
+		Err:   err,
+	}
 }
 
-func (w *Worker) SetCipherNonce(nonce []byte) error {
-	return w.processor.Cipher.SetNonce(nonce)
+func (w *Worker) Cancel() {
+	w.cancel()
 }

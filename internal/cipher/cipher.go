@@ -4,80 +4,80 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
-	"fmt"
+	"errors"
+	"io"
 )
 
+var (
+	ErrInvalidKeySize   = errors.New("AES key must be 16, 24, or 32 bytes")
+	ErrEmptyPlaintext   = errors.New("plaintext cannot be empty")
+	ErrEmptyCiphertext  = errors.New("ciphertext cannot be empty")
+	ErrDecryptionFailed = errors.New("failed to decrypt ciphertext")
+)
+
+// Cipher provides AES-GCM encryption and decryption.
 type Cipher struct {
-	key   []byte
-	nonce []byte
+	aead cipher.AEAD
 }
 
-func NewCipher(key []byte) (*Cipher, error) {
-	validKeySizes := map[int]bool{
-		16: true,
-		24: true,
-		32: true,
+// New creates a new Cipher with the given key.
+// The key must be 16, 24, or 32 bytes for AES-128, AES-192, or AES-256.
+func New(key []byte) (*Cipher, error) {
+	if !isValidKeySize(len(key)) {
+		return nil, ErrInvalidKeySize
 	}
 
-	if !validKeySizes[len(key)] {
-		return nil, fmt.Errorf("AES key must be 16, 24, or 32 bytes")
-	}
-
-	nonce := make([]byte, 12)
-	if _, err := rand.Read(nonce); err != nil {
-		return nil, fmt.Errorf("failed to generate nonce: %w", err)
-	}
-
-	return &Cipher{
-		key:   key,
-		nonce: nonce,
-	}, nil
-}
-
-func (c *Cipher) Encrypt(plaintext []byte) ([]byte, error) {
-	if len(plaintext) == 0 {
-		return nil, fmt.Errorf("plaintext cannot be empty")
-	}
-
-	block, err := aes.NewCipher(c.key)
+	block, err := aes.NewCipher(key)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create AES cipher: %w", err)
+		return nil, err
 	}
 
 	aead, err := cipher.NewGCM(block)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create AES GCM: %w", err)
+		return nil, err
 	}
 
-	nonce := make([]byte, len(c.nonce))
-	copy(nonce, c.nonce)
+	return &Cipher{aead: aead}, nil
+}
 
-	ciphertext := aead.Seal(nil, nonce, plaintext, nil)
+// Encrypt encrypts the plaintext and returns the ciphertext with nonce prepended.
+func (c *Cipher) Encrypt(plaintext []byte) ([]byte, error) {
+	if len(plaintext) == 0 {
+		return nil, ErrEmptyPlaintext
+	}
+
+	nonce := make([]byte, c.aead.NonceSize())
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		return nil, err
+	}
+
+	ciphertext := c.aead.Seal(nonce, nonce, plaintext, nil)
 	return ciphertext, nil
 }
 
+// Decrypt decrypts the ciphertext (which should have nonce prepended) and returns the plaintext.
 func (c *Cipher) Decrypt(ciphertext []byte) ([]byte, error) {
 	if len(ciphertext) == 0 {
-		return nil, fmt.Errorf("ciphertext cannot be empty")
+		return nil, ErrEmptyCiphertext
 	}
 
-	block, err := aes.NewCipher(c.key)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create AES cipher: %w", err)
+	nonceSize := c.aead.NonceSize()
+	if len(ciphertext) < nonceSize {
+		return nil, ErrDecryptionFailed
 	}
 
-	aead, err := cipher.NewGCM(block)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create AES GCM: %w", err)
-	}
+	nonce := ciphertext[:nonceSize]
+	ciphertext = ciphertext[nonceSize:]
 
-	nonce := make([]byte, len(c.nonce))
-	copy(nonce, c.nonce)
-
-	plaintext, err := aead.Open(nil, nonce, ciphertext, nil)
+	plaintext, err := c.aead.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decrypt ciphertext: %w", err)
+		return nil, ErrDecryptionFailed
 	}
 
 	return plaintext, nil
+}
+
+// isValidKeySize checks if the key size is valid for AES.
+func isValidKeySize(size int) bool {
+	return size == 16 || size == 24 || size == 32
 }

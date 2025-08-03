@@ -1,124 +1,170 @@
+// Package ui provides interactive command-line prompts for file operations.
 package ui
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/AlecAivazis/survey/v2"
 )
 
-type (
-	DeleteOption  string
-	ProcessorMode string
-)
+// DeleteOption represents different file deletion methods.
+type DeleteOption string
 
+// ProcessorMode represents file processing operations.
+type ProcessorMode string
+
+// Available deletion options.
 const (
-	DeleteStandard DeleteOption  = "Normal Delete (faster, but recoverable)"
-	DeleteSecure   DeleteOption  = "Secure Delete (slower, but unrecoverable)"
-	ModeEncrypt    ProcessorMode = "Encrypt"
-	ModeDecrypt    ProcessorMode = "Decrypt"
+	DeleteStandard DeleteOption = "Normal Delete (faster, but recoverable)"
+	DeleteSecure   DeleteOption = "Secure Delete (slower, but unrecoverable)"
 )
 
+// Available processing modes.
+const (
+	ModeEncrypt ProcessorMode = "Encrypt"
+	ModeDecrypt ProcessorMode = "Decrypt"
+)
+
+// Common errors.
+var (
+	ErrPasswordMismatch = errors.New("passwords do not match")
+	ErrNoFilesAvailable = errors.New("no files available for selection")
+)
+
+// Prompt provides methods for interactive command-line prompts.
 type Prompt struct{}
 
+// NewPrompt creates a new Prompt instance.
 func NewPrompt() *Prompt {
 	return &Prompt{}
 }
 
+// ConfirmFileOverwrite prompts the user to confirm overwriting an existing file.
 func (p *Prompt) ConfirmFileOverwrite(path string) (bool, error) {
 	var result bool
 	prompt := &survey.Confirm{
 		Message: fmt.Sprintf("Output file %s already exists. Overwrite?", path),
 	}
-	err := survey.AskOne(prompt, &result)
-	if err != nil {
-		return false, err
+
+	if err := survey.AskOne(prompt, &result); err != nil {
+		return false, fmt.Errorf("failed to confirm file overwrite: %w", err)
 	}
+
 	return result, nil
 }
 
+// GetEncryptionPassword prompts for and confirms a password for encryption.
+// Returns an error if the passwords don't match or if input fails.
 func (p *Prompt) GetEncryptionPassword() (string, error) {
-	var password, confirm string
-
-	passwordPrompt := &survey.Password{
-		Message: "Enter password:",
-	}
-	if err := survey.AskOne(passwordPrompt, &password); err != nil {
+	password, err := p.getPassword("Enter password:")
+	if err != nil {
 		return "", fmt.Errorf("failed to get password: %w", err)
 	}
 
-	confirmPrompt := &survey.Password{
-		Message: "Confirm password:",
-	}
-	if err := survey.AskOne(confirmPrompt, &confirm); err != nil {
+	confirm, err := p.getPassword("Confirm password:")
+	if err != nil {
 		return "", fmt.Errorf("failed to confirm password: %w", err)
 	}
 
 	if password != confirm {
-		return "", fmt.Errorf("passwords do not match")
+		return "", ErrPasswordMismatch
 	}
 
 	return password, nil
 }
 
+// getPassword is a helper method to prompt for a password.
+func (p *Prompt) getPassword(message string) (string, error) {
+	var password string
+	prompt := &survey.Password{
+		Message: message,
+	}
+
+	return password, survey.AskOne(prompt, &password)
+}
+
+// ConfirmFileRemoval prompts for confirmation and deletion method for file removal.
+// Returns whether to proceed, the deletion method, and any error.
 func (p *Prompt) ConfirmFileRemoval(path, message string) (bool, DeleteOption, error) {
-	var confirm bool
-	confirmPrompt := &survey.Confirm{
-		Message: fmt.Sprintf("%s %s", message, path),
+	confirmed, err := p.confirmAction(fmt.Sprintf("%s %s", message, path))
+	if err != nil {
+		return false, "", fmt.Errorf("failed to confirm file removal: %w", err)
 	}
-	if err := survey.AskOne(confirmPrompt, &confirm); err != nil {
-		return false, "", err
-	}
-	if !confirm {
+
+	if !confirmed {
 		return false, "", nil
 	}
 
-	var deleteType string
-	deleteOptions := []string{
+	deleteType, err := p.selectDeleteOption()
+	if err != nil {
+		return false, "", fmt.Errorf("failed to select delete option: %w", err)
+	}
+
+	return true, deleteType, nil
+}
+
+// confirmAction is a helper method for yes/no confirmation prompts.
+func (p *Prompt) confirmAction(message string) (bool, error) {
+	var result bool
+	prompt := &survey.Confirm{
+		Message: message,
+	}
+
+	return result, survey.AskOne(prompt, &result)
+}
+
+// selectDeleteOption prompts the user to select a deletion method.
+func (p *Prompt) selectDeleteOption() (DeleteOption, error) {
+	options := []string{
 		string(DeleteStandard),
 		string(DeleteSecure),
 	}
-	deletePrompt := &survey.Select{
-		Message: "Select delete type:",
-		Options: deleteOptions,
-	}
-	if err := survey.AskOne(deletePrompt, &deleteType); err != nil {
-		return false, "", err
+
+	selected, err := p.selectFromOptions("Select delete type:", options)
+	if err != nil {
+		return "", err
 	}
 
-	return true, DeleteOption(deleteType), nil
+	return DeleteOption(selected), nil
 }
 
+// GetProcessingMode prompts the user to select a processing operation.
 func (p *Prompt) GetProcessingMode() (ProcessorMode, error) {
-	var operationType string
-	operationOptions := []string{
+	options := []string{
 		string(ModeEncrypt),
 		string(ModeDecrypt),
 	}
 
-	prompt := &survey.Select{
-		Message: "Select Operation:",
-		Options: operationOptions,
-	}
-	if err := survey.AskOne(prompt, &operationType); err != nil {
+	selected, err := p.selectFromOptions("Select Operation:", options)
+	if err != nil {
 		return "", fmt.Errorf("operation selection failed: %w", err)
 	}
 
-	return ProcessorMode(operationType), nil
+	return ProcessorMode(selected), nil
 }
 
+// ChooseFile prompts the user to select a file from the provided list.
 func (p *Prompt) ChooseFile(files []string) (string, error) {
 	if len(files) == 0 {
-		return "", fmt.Errorf("no files available for selection")
+		return "", ErrNoFilesAvailable
 	}
 
-	var selected string
-	prompt := &survey.Select{
-		Message: "Select file:",
-		Options: files,
-	}
-	if err := survey.AskOne(prompt, &selected); err != nil {
+	selected, err := p.selectFromOptions("Select file:", files)
+	if err != nil {
 		return "", fmt.Errorf("file selection failed: %w", err)
 	}
 
 	return selected, nil
+}
+
+// selectFromOptions is a helper method for selection prompts.
+func (p *Prompt) selectFromOptions(message string, options []string) (string, error) {
+	var selected string
+	prompt := &survey.Select{
+		Message: message,
+		Options: options,
+	}
+
+	return selected, survey.AskOne(prompt, &selected)
 }

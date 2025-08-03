@@ -1,4 +1,4 @@
-package core
+package files
 
 import (
 	"crypto/rand"
@@ -9,41 +9,24 @@ import (
 	"github.com/hambosto/hexwarden/internal/ui"
 )
 
-type FileHandler interface {
-	Remove(path string, option ui.DeleteOption) error
-	CreateFile(path string) (*os.File, error)
-	ValidatePath(path string, mustExist bool) error
-	OpenFile(path string) (*os.File, os.FileInfo, error)
-}
-
-type UserInterface interface {
-	ConfirmFileOverwrite(path string) (bool, error)
-	GetEncryptionPassword() (string, error)
-	ConfirmFileRemoval(path string, message string) (bool, ui.DeleteOption, error)
-	GetProcessingMode() (ui.ProcessorMode, error)
-	ChooseFile(files []string) (string, error)
-}
-
-type Config struct {
-	SourcePath      string
-	DestinationPath string
-	Password        string
-	Mode            ui.ProcessorMode
-}
-
+// FileManager handles file creation, deletion (standard and secure), and validation.
 type FileManager struct {
 	overwritePasses int
 }
 
+// NewFileManager returns a new FileManager with the specified number of secure overwrite passes.
+// If the provided value is non-positive, a default of 3 passes is used.
 func NewFileManager(overwritePasses int) *FileManager {
 	if overwritePasses <= 0 {
 		overwritePasses = 3
 	}
 	return &FileManager{
-		overwritePasses: 3,
+		overwritePasses: overwritePasses,
 	}
 }
 
+// Remove deletes the file at the given path using the provided deletion option.
+// It supports standard deletion and secure deletion (multiple overwrites).
 func (fm *FileManager) Remove(path string, option ui.DeleteOption) error {
 	switch option {
 	case ui.DeleteStandard:
@@ -55,6 +38,8 @@ func (fm *FileManager) Remove(path string, option ui.DeleteOption) error {
 	}
 }
 
+// CreateFile creates and returns a new file at the given path.
+// The path is sanitized before use.
 func (fm *FileManager) CreateFile(path string) (*os.File, error) {
 	output, err := os.Create(filepath.Clean(path))
 	if err != nil {
@@ -63,10 +48,14 @@ func (fm *FileManager) CreateFile(path string) (*os.File, error) {
 	return output, nil
 }
 
+// ValidatePath checks whether a file at the given path should or should not exist.
+// If mustExist is true, it checks for existence and non-zero size.
+// If mustExist is false, it ensures the file does not exist.
 func (fm *FileManager) ValidatePath(path string, mustExist bool) error {
 	fileInfo, err := os.Stat(path)
+
 	if mustExist {
-		if os.IsExist(err) {
+		if os.IsNotExist(err) {
 			return fmt.Errorf("file not found: %s", path)
 		}
 		if fileInfo.Size() == 0 {
@@ -79,11 +68,11 @@ func (fm *FileManager) ValidatePath(path string, mustExist bool) error {
 		if !os.IsNotExist(err) {
 			return fmt.Errorf("error accessing file: %w", err)
 		}
-		return nil
 	}
 	return nil
 }
 
+// OpenFile opens a file and returns both the file handle and its metadata.
 func (fm *FileManager) OpenFile(path string) (*os.File, os.FileInfo, error) {
 	file, err := os.Open(filepath.Clean(path))
 	if err != nil {
@@ -97,12 +86,14 @@ func (fm *FileManager) OpenFile(path string) (*os.File, os.FileInfo, error) {
 	return file, info, nil
 }
 
+// secureDelete securely deletes a file by overwriting its contents with random data
+// for the given number of passes before removing the file.
 func secureDelete(path string, passes int) error {
 	file, err := os.OpenFile(filepath.Clean(path), os.O_WRONLY, 0)
 	if err != nil {
 		return fmt.Errorf("failed to open file for secure deletion: %w", err)
 	}
-	defer file.Close()
+	defer file.Close() //nolint:errcheck
 
 	info, err := file.Stat()
 	if err != nil {
@@ -118,6 +109,7 @@ func secureDelete(path string, passes int) error {
 	return os.Remove(path)
 }
 
+// randomOverwrite writes cryptographically secure random bytes over the file content.
 func randomOverwrite(file *os.File, size int64) error {
 	if _, err := file.Seek(0, 0); err != nil {
 		return fmt.Errorf("failed to seek to file start: %w", err)

@@ -5,53 +5,108 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"sync"
+	"sort"
 )
 
-func (w *Worker) writeResults(writer io.Writer, results <-chan TaskResult, wg *sync.WaitGroup, errChan chan<- error) {
-	defer wg.Done()
+type resultBuffer struct {
+	results map[uint64]TaskResult
+	next    uint64
+}
 
-	pending := make(map[uint32]TaskResult)
-	var nextIndex uint32
+func newResultBuffer() *resultBuffer {
+	return &resultBuffer{
+		results: make(map[uint64]TaskResult),
+		next:    0,
+	}
+}
 
-	for res := range results {
-		if res.Err != nil {
-			errChan <- fmt.Errorf("processing chunk %d: %w", res.Index, res.Err)
-			return
+func (rb *resultBuffer) add(result TaskResult) []TaskResult {
+	rb.results[result.Index] = result
+
+	var ready []TaskResult
+	for {
+		if result, exists := rb.results[rb.next]; exists {
+			ready = append(ready, result)
+			delete(rb.results, rb.next)
+			rb.next++
+		} else {
+			break
 		}
+	}
 
-		pending[res.Index] = res
+	return ready
+}
 
-		for {
-			current, exists := pending[nextIndex]
-			if !exists {
-				break
+func (rb *resultBuffer) flush() []TaskResult {
+	if len(rb.results) == 0 {
+		return nil
+	}
+
+	// Get all remaining results sorted by index
+	indices := make([]uint64, 0, len(rb.results))
+	for idx := range rb.results {
+		indices = append(indices, idx)
+	}
+	sort.Slice(indices, func(i, j int) bool { return indices[i] < indices[j] })
+
+	results := make([]TaskResult, len(indices))
+	for i, idx := range indices {
+		results[i] = rb.results[idx]
+	}
+
+	return results
+}
+
+func (w *Worker) writeResults(writer io.Writer) error {
+	buffer := newResultBuffer()
+
+	for {
+		select {
+		case result, ok := <-w.resultChan:
+			if !ok {
+				// Channel closed, flush remaining results
+				remaining := buffer.flush()
+				for _, res := range remaining {
+					if err := w.writeResult(writer, res); err != nil {
+						return err
+					}
+				}
+				return nil
 			}
 
-			if err := w.writeChunk(writer, current); err != nil {
-				errChan <- fmt.Errorf("writing chunk %d: %w", nextIndex, err)
-				return
+			if result.Err != nil {
+				return fmt.Errorf("processing chunk %d: %w", result.Index, result.Err)
 			}
 
-			delete(pending, nextIndex)
-			nextIndex++
+			// Add result to buffer and write any ready results
+			ready := buffer.add(result)
+			for _, res := range ready {
+				if err := w.writeResult(writer, res); err != nil {
+					return err
+				}
+			}
+
+		case <-w.ctx.Done():
+			return w.ctx.Err()
 		}
 	}
 }
 
-func (w *Worker) writeChunk(writer io.Writer, res TaskResult) error {
-	if w.processing == Encryption {
-		if err := w.writeChunkSize(writer, len(res.Data)); err != nil {
-			return err
+func (w *Worker) writeResult(writer io.Writer, result TaskResult) error {
+	if w.config.Processing == Encryption {
+		if err := w.writeChunkSize(writer, len(result.Data)); err != nil {
+			return fmt.Errorf("writing chunk size: %w", err)
 		}
 	}
 
-	if _, err := writer.Write(res.Data); err != nil {
-		return fmt.Errorf("write failed: %w", err)
+	if _, err := writer.Write(result.Data); err != nil {
+		return fmt.Errorf("writing chunk data: %w", err)
 	}
 
-	if err := w.bar.Add(int64(res.Size)); err != nil {
-		return fmt.Errorf("failed to update progress bar: %w", err)
+	if w.bar != nil {
+		if err := w.bar.Add(int64(result.Size)); err != nil {
+			return fmt.Errorf("updating progress: %w", err)
+		}
 	}
 
 	return nil
