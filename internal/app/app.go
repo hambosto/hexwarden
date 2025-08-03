@@ -81,13 +81,11 @@ func (a *App) encryptFile(srcPath, destPath string) error {
 	if err != nil {
 		return fmt.Errorf("failed to open source: %w", err)
 	}
-	defer srcFile.Close()
 
 	destFile, err := a.fileManager.CreateFile(destPath)
 	if err != nil {
 		return fmt.Errorf("failed to create destination: %w", err)
 	}
-	defer destFile.Close()
 
 	password, err := a.prompt.GetEncryptionPassword()
 	if err != nil {
@@ -136,7 +134,6 @@ func (a *App) decryptFile(srcPath, destPath string) error {
 	if err != nil {
 		return err
 	}
-	defer srcFile.Close()
 
 	hdr, err := header.Read(srcFile)
 	if err != nil {
@@ -165,7 +162,6 @@ func (a *App) decryptFile(srcPath, destPath string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create destination: %w", err)
 	}
-	defer destFile.Close()
 
 	fmt.Printf("Decrypting %s...\n", srcPath)
 
