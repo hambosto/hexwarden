@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"math"
 )
 
 // Compression levels
@@ -55,8 +56,13 @@ func (c *Compression) Compress(data []byte) ([]byte, error) {
 	// Create final buffer with size header + compressed data
 	var finalBuf bytes.Buffer
 
+	size := len(compressedData)
+	if size > math.MaxUint32 {
+		return nil, fmt.Errorf("compressed data too large: %d bytes", size)
+	}
+
 	// Write the compressed size as a 4-byte big-endian header
-	if err := binary.Write(&finalBuf, binary.BigEndian, uint32(len(compressedData))); err != nil {
+	if err := binary.Write(&finalBuf, binary.BigEndian, uint32(size)); err != nil {
 		return nil, fmt.Errorf("failed to write size header: %w", err)
 	}
 

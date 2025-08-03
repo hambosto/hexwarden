@@ -77,18 +77,13 @@ func (a *App) ProcessFile(inputPath string, mode ui.ProcessorMode) error {
 
 // encryptFile handles file encryption.
 func (a *App) encryptFile(srcPath, destPath string) error {
-	srcFile, err := os.Open(srcPath)
+	srcFile, srcInfo, err := a.fileManager.OpenFile(srcPath)
 	if err != nil {
 		return fmt.Errorf("failed to open source: %w", err)
 	}
 	defer srcFile.Close()
 
-	srcInfo, err := srcFile.Stat()
-	if err != nil {
-		return fmt.Errorf("failed to get file info: %w", err)
-	}
-
-	destFile, err := os.Create(destPath)
+	destFile, err := a.fileManager.CreateFile(destPath)
 	if err != nil {
 		return fmt.Errorf("failed to create destination: %w", err)
 	}
@@ -111,8 +106,13 @@ func (a *App) encryptFile(srcPath, destPath string) error {
 
 	fmt.Printf("Encrypting %s...\n", srcPath)
 
+	size := srcInfo.Size()
+	if size < 0 {
+		return fmt.Errorf("invalid file size: %d", size)
+	}
+
 	// Write header
-	hdr, err := header.New(salt, uint64(srcInfo.Size()), key)
+	hdr, err := header.New(salt, uint64(size), key)
 	if err != nil {
 		return fmt.Errorf("header creation failed: %w", err)
 	}
@@ -132,9 +132,9 @@ func (a *App) encryptFile(srcPath, destPath string) error {
 
 // decryptFile handles file decryption.
 func (a *App) decryptFile(srcPath, destPath string) error {
-	srcFile, err := os.Open(srcPath)
+	srcFile, _, err := a.fileManager.OpenFile(srcPath)
 	if err != nil {
-		return fmt.Errorf("failed to open source: %w", err)
+		return err
 	}
 	defer srcFile.Close()
 
@@ -161,7 +161,7 @@ func (a *App) decryptFile(srcPath, destPath string) error {
 		return fmt.Errorf("file too large")
 	}
 
-	destFile, err := os.Create(destPath)
+	destFile, err := a.fileManager.CreateFile(destPath)
 	if err != nil {
 		return fmt.Errorf("failed to create destination: %w", err)
 	}

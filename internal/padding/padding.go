@@ -48,7 +48,7 @@ func (p *Padder) Pad(data []byte) ([]byte, error) {
 
 	// Create length header
 	header := make([]byte, 4)
-	binary.BigEndian.PutUint32(header, uint32(len(data)))
+	binary.BigEndian.PutUint32(header, uint32(dataLen))
 
 	// Combine header and data
 	combined := make([]byte, 0, len(header)+len(data)+p.blockSize)
