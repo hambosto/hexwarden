@@ -93,7 +93,7 @@ func secureDelete(path string, passes int) error {
 	if err != nil {
 		return fmt.Errorf("failed to open file for secure deletion: %w", err)
 	}
-	defer file.Close()
+	defer file.Close() //nolint:errcheck
 
 	info, err := file.Stat()
 	if err != nil {

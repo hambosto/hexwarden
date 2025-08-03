@@ -135,7 +135,7 @@ func TestProcessor_EncryptDecrypt(t *testing.T) {
 			name: "random data (low compression)",
 			data: func() []byte {
 				data := make([]byte, 256)
-				rand.Read(data)
+				rand.Read(data) //nolint:errcheck
 				return data
 			}(),
 		},
@@ -387,7 +387,7 @@ func TestProcessor_EncryptDecrypt_Concurrent(t *testing.T) {
 
 func BenchmarkProcessor_Encrypt(b *testing.B) {
 	key := make([]byte, 32)
-	rand.Read(key)
+	rand.Read(key) //nolint:errcheck
 
 	processor, err := New(key)
 	if err != nil {
@@ -407,7 +407,7 @@ func BenchmarkProcessor_Encrypt(b *testing.B) {
 
 func BenchmarkProcessor_Decrypt(b *testing.B) {
 	key := make([]byte, 32)
-	rand.Read(key)
+	rand.Read(key) //nolint:errcheck
 
 	processor, err := New(key)
 	if err != nil {
@@ -431,7 +431,7 @@ func BenchmarkProcessor_Decrypt(b *testing.B) {
 
 func BenchmarkProcessor_EncryptDecrypt(b *testing.B) {
 	key := make([]byte, 32)
-	rand.Read(key)
+	rand.Read(key) //nolint:errcheck
 
 	processor, err := New(key)
 	if err != nil {
