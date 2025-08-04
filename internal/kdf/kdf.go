@@ -1,4 +1,4 @@
-// Package kdf provides a simple, secure key derivation function using scrypt.
+// Package kdf provides a secure key derivation function using Argon2id.
 package kdf
 
 import (
@@ -7,57 +7,52 @@ import (
 	"fmt"
 	"io"
 
-	"golang.org/x/crypto/scrypt"
+	"golang.org/x/crypto/argon2"
 )
 
+// Errors returned by the package.
 var (
 	ErrEmptyPassword = errors.New("kdf: password cannot be empty")
 	ErrInvalidSalt   = errors.New("kdf: invalid salt length")
 )
 
+// Recommended Argon2id parameters based on OWASP guidance:
+// https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
 const (
-	// Heavy scrypt parameters for maximum security
-	scryptN    = 1048576 // 2^20, CPU/memory cost
-	scryptR    = 8       // block size
-	scryptP    = 1       // parallelization
-	keyLength  = 32      // 256-bit key
-	saltLength = 32      // 256-bit salt
+	// Number of iterations (time cost).
+	argonTime uint32 = 3
+
+	// Memory usage in KiB (64 MiB).
+	argonMemory uint32 = 64 * 1024
+
+	// Number of threads (parallelism).
+	argonThreads uint8 = 4
+
+	// Desired length of the derived key in bytes.
+	keyLength uint32 = 32
+
+	// Length of the salt in bytes.
+	saltLength = 32
 )
 
-// DeriveKey derives a cryptographic key from password and salt using scrypt.
-// The salt must be exactly 32 bytes. Returns a 32-byte key.
+// DeriveKey derives a key from the given password and salt using Argon2id.
 func DeriveKey(password, salt []byte) ([]byte, error) {
 	if len(password) == 0 {
 		return nil, ErrEmptyPassword
 	}
-
 	if len(salt) != saltLength {
 		return nil, fmt.Errorf("%w: expected %d bytes, got %d", ErrInvalidSalt, saltLength, len(salt))
 	}
 
-	key, err := scrypt.Key(password, salt, scryptN, scryptR, scryptP, keyLength)
-	if err != nil {
-		return nil, fmt.Errorf("kdf: key derivation failed: %w", err)
-	}
-
+	key := argon2.IDKey(password, salt, argonTime, argonMemory, argonThreads, keyLength)
 	return key, nil
 }
 
-// GenerateSalt creates a cryptographically secure 32-byte random salt.
+// GenerateSalt generates a new cryptographically secure random salt.
 func GenerateSalt() ([]byte, error) {
 	salt := make([]byte, saltLength)
 	if _, err := io.ReadFull(rand.Reader, salt); err != nil {
 		return nil, fmt.Errorf("kdf: failed to generate salt: %w", err)
 	}
 	return salt, nil
-}
-
-// SaltLength returns the required salt length in bytes.
-func SaltLength() int {
-	return saltLength
-}
-
-// KeyLength returns the derived key length in bytes.
-func KeyLength() int {
-	return keyLength
 }
