@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"sort"
+	"slices"
 )
 
 type resultBuffer struct {
@@ -47,7 +47,7 @@ func (rb *resultBuffer) flush() []TaskResult {
 	for idx := range rb.results {
 		indices = append(indices, idx)
 	}
-	sort.Slice(indices, func(i, j int) bool { return indices[i] < indices[j] })
+	slices.Sort(indices)
 
 	results := make([]TaskResult, len(indices))
 	for i, idx := range indices {

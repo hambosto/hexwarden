@@ -42,7 +42,7 @@ func New(key []byte) (*Processor, error) {
 		return nil, fmt.Errorf("failed to create encoder: %w", err)
 	}
 
-	compression, err := compression.New(compression.LevelBestCompression)
+	compression, err := compression.New(compression.LevelDefaultCompression)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create compression: %w", err)
 	}

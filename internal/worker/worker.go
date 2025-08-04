@@ -76,7 +76,7 @@ func New(config Config) (*Worker, error) {
 
 	// Set defaults
 	if config.Concurrency <= 0 {
-		config.Concurrency = runtime.NumCPU() * 2
+		config.Concurrency = runtime.NumCPU()
 	}
 	if config.QueueSize <= 0 {
 		config.QueueSize = DefaultQueueSize
