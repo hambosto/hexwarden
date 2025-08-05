@@ -304,8 +304,12 @@ func TestWeakSaltDetection(t *testing.T) {
 			isWeak: true,
 		},
 		{
-			name:   "random salt",
-			salt:   func() []byte { b := make([]byte, SaltSize); rand.Read(b); return b }(),
+			name: "random salt",
+			salt: func() []byte {
+				b := make([]byte, SaltSize)
+				rand.Read(b) //nolint:errcheck
+				return b
+			}(),
 			isWeak: false,
 		},
 	}
