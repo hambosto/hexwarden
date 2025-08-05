@@ -121,7 +121,7 @@ func main() {
 	app := NewApplication(config)
 
 	if err := app.Run(); err != nil {
-		fmt.Printf("Application error: %v", err)
+		fmt.Printf("Application error: %v\n", err)
 		os.Exit(1)
 	}
 }

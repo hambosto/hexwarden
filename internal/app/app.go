@@ -141,16 +141,16 @@ func (a *App) decryptFile(srcPath, destPath string) error {
 		return fmt.Errorf("password prompt failed: %w", err)
 	}
 
-	key, err := kdf.DeriveKey([]byte(password), hdr.Salt)
+	key, err := kdf.DeriveKey([]byte(password), hdr.Salt())
 	if err != nil {
 		return fmt.Errorf("key derivation failed: %w", err)
 	}
 
-	if !hdr.VerifyPassword(key) {
-		return fmt.Errorf("password verification failed")
+	if err := hdr.VerifyKey(key); err != nil {
+		return fmt.Errorf("header verification failed: %w", err)
 	}
 
-	if hdr.OriginalSize > math.MaxInt64 {
+	if hdr.OriginalSize() > math.MaxInt64 {
 		return fmt.Errorf("file too large")
 	}
 
@@ -167,7 +167,7 @@ func (a *App) decryptFile(srcPath, destPath string) error {
 		return fmt.Errorf("failed to create worker: %w", err)
 	}
 
-	return w.Process(srcFile, destFile, int64(hdr.OriginalSize))
+	return w.Process(srcFile, destFile, int64(hdr.OriginalSize()))
 }
 
 // getOutputPath determines output path based on mode.
