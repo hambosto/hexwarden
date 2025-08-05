@@ -100,13 +100,13 @@ func (a *App) encryptFile(srcPath, destPath string) error {
 
 	fmt.Printf("Encrypting %s...\n", srcPath)
 
-	size := srcInfo.Size()
-	if size < 0 {
-		return fmt.Errorf("invalid file size: %d", size)
+	originalSize := srcInfo.Size()
+	if originalSize < 0 {
+		return fmt.Errorf("invalid file size: %d", originalSize)
 	}
 
 	// Write header
-	hdr, err := header.New(salt, uint64(size), key)
+	hdr, err := header.New(salt, uint64(originalSize), key)
 	if err != nil {
 		return fmt.Errorf("header creation failed: %w", err)
 	}
