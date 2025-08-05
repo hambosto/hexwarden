@@ -14,7 +14,6 @@ import (
 const (
 	SaltSize          = 32
 	OriginalSizeBytes = 8
-	NonceSize         = 12
 	VerificationSize  = 32
 )
 

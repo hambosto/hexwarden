@@ -3,7 +3,6 @@ package app
 import (
 	"fmt"
 	"math"
-	"os"
 	"strings"
 
 	"github.com/hambosto/hexwarden/internal/files"
@@ -49,13 +48,10 @@ func (a *App) ProcessFile(inputPath string, mode ui.ProcessorMode) error {
 	case ui.ModeDecrypt:
 		err = a.decryptFile(inputPath, outputPath)
 	default:
-		return fmt.Errorf("unsupported mode: %s", mode)
+		return fmt.Errorf("unknown processing mode: %v", mode)
 	}
 
 	if err != nil {
-		if err := os.Remove(outputPath); err != nil {
-			return fmt.Errorf("failed to remove incomplete file: %w", err)
-		}
 		return err
 	}
 
