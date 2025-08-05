@@ -167,7 +167,12 @@ func (a *App) decryptFile(srcPath, destPath string) error {
 		return fmt.Errorf("failed to create worker: %w", err)
 	}
 
-	return w.Process(srcFile, destFile, int64(hdr.OriginalSize()))
+	originalSize := hdr.OriginalSize()
+	if originalSize > uint64(math.MaxInt64) {
+		return fmt.Errorf("invalid file size: %d", originalSize)
+	}
+
+	return w.Process(srcFile, destFile, int64(originalSize))
 }
 
 // getOutputPath determines output path based on mode.
