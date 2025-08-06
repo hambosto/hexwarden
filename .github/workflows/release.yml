@@ -6,40 +6,8 @@ on:
       - "v*"
 
 jobs:
-  create_release:
-    name: Create GitHub Release
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.get_version.outputs.VERSION }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Extract version from tag
-        id: get_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
-
-      - name: Generate CHANGELOG
-        run: |
-          set -euo pipefail
-          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^)
-          git log "$PREV_TAG"..HEAD --pretty=format:"- %s" > CHANGELOG.md
-          echo "CHANGELOG:"
-          cat CHANGELOG.md
-
-      - name: Create GitHub Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release create "${{ steps.get_version.outputs.VERSION }}" \
-            --title "Release ${{ steps.get_version.outputs.VERSION }}" \
-            --notes-file CHANGELOG.md
-
-  build_and_upload:
-    name: Build & Upload Binaries
-    needs: create_release
+  release:
+    name: Build & Release
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -67,12 +35,25 @@ jobs:
           go-version: 'stable'
           check-latest: true
 
+      - name: Extract version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.get_version.outputs.VERSION }}
+          name: "Release ${{ steps.get_version.outputs.VERSION }}"
+          generate_release_notes: true
+          make_latest: true
+
       - name: Build Go binary
         id: build
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
-          VERSION: ${{ needs.create_release.outputs.version }}
+          VERSION: ${{ steps.get_version.outputs.version }}
         run: |
           set -euo pipefail
           FILENAME="hexwarden-${VERSION}-${GOOS}-${GOARCH}"
@@ -99,19 +80,19 @@ jobs:
 
           echo "ASSET_NAME=dist/${FILENAME}.zip" >> "$GITHUB_OUTPUT"
 
-      - name: Upload binary asset to release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release upload "${{ needs.create_release.outputs.version }}" \
-            "${{ steps.build.outputs.ASSET_NAME }}" \
-            --clobber
-
-      - name: Generate and upload SHA256 checksum
-        env:
-          VERSION: ${{ needs.create_release.outputs.version }}
+      - name: Generate checksums
         run: |
           ASSET="${{ steps.build.outputs.ASSET_NAME }}"
-          CHECKSUM_FILE="${ASSET}.sha256"
-          shasum -a 256 "$ASSET" > "$CHECKSUM_FILE"
-          gh release upload "$VERSION" "$CHECKSUM_FILE" --clobber
+          HASH=$(shasum -a 256 "$ASSET" | cut -d ' ' -f1)
+          echo "CHECKSUM_$(echo ${{ matrix.goos }}_${{ matrix.goarch }} | tr '[:lower:]' '[:upper:]')=$HASH" >> $GITHUB_ENV
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.build.outputs.ASSET_NAME }}
+          tag_name: ${{ steps.get_version.outputs.VERSION }}
+          make_latest: true
+          append_body: true
+          body: |
+            **${{ matrix.goos }}-${{ matrix.goarch }}:**
+            `sha256(${{ steps.build.outputs.ASSET_NAME }}) ${{ env[format('CHECKSUM_{0}_{1}', matrix.goos, matrix.goarch)] }}`
