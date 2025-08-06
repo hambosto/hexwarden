@@ -32,10 +32,7 @@ const (
 	IntegritySize     = 32     // SHA-256 hash of header fields (except auth & checksum)
 	AuthSize          = 32     // HMAC-SHA256 authentication tag
 	ChecksumSize      = 4      // CRC32 checksum of header (except magic)
-
-	// TotalSize is the fixed byte size of the header.
-	TotalSize = len(MagicBytes) + SaltSize + OriginalSizeBytes +
-		NonceSize + IntegritySize + AuthSize + ChecksumSize // 128 bytes
+	TotalSize         = 128    // the fixed byte size of the header.
 )
 
 // Header errors with detailed context for all failure cases.
