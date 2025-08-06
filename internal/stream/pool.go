@@ -1,30 +1,30 @@
-package worker
+package stream
 
 import (
 	"context"
 	"sync"
 )
 
-type WorkerPool struct {
+type Pool struct {
 	size      int
 	processor func(Task) TaskResult
 }
 
-func NewWorkerPool(size int, processor func(Task) TaskResult) *WorkerPool {
-	return &WorkerPool{
+func NewPool(size int, processor func(Task) TaskResult) *Pool {
+	return &Pool{
 		size:      size,
 		processor: processor,
 	}
 }
 
-func (wp *WorkerPool) Process(ctx context.Context, tasks <-chan Task, results chan<- TaskResult) error {
+func (p *Pool) Process(ctx context.Context, tasks <-chan Task, results chan<- TaskResult) error {
 	var wg sync.WaitGroup
 
-	for i := 0; i < wp.size; i++ {
+	for i := 0; i < p.size; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			wp.worker(ctx, tasks, results)
+			p.pool(ctx, tasks, results)
 		}()
 	}
 
@@ -32,7 +32,7 @@ func (wp *WorkerPool) Process(ctx context.Context, tasks <-chan Task, results ch
 	return nil
 }
 
-func (wp *WorkerPool) worker(ctx context.Context, tasks <-chan Task, results chan<- TaskResult) {
+func (p *Pool) pool(ctx context.Context, tasks <-chan Task, results chan<- TaskResult) {
 	for {
 		select {
 		case task, ok := <-tasks:
@@ -40,7 +40,7 @@ func (wp *WorkerPool) worker(ctx context.Context, tasks <-chan Task, results cha
 				return // Channel closed
 			}
 
-			result := wp.processor(task)
+			result := p.processor(task)
 
 			select {
 			case results <- result:

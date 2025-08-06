@@ -8,8 +8,8 @@ import (
 	"github.com/hambosto/hexwarden/internal/files"
 	"github.com/hambosto/hexwarden/internal/header"
 	"github.com/hambosto/hexwarden/internal/kdf"
+	"github.com/hambosto/hexwarden/internal/stream"
 	"github.com/hambosto/hexwarden/internal/ui"
-	"github.com/hambosto/hexwarden/internal/worker"
 )
 
 // App handles file encryption and decryption operations.
@@ -116,12 +116,12 @@ func (a *App) encryptFile(srcPath, destPath string) error {
 	}
 
 	// Encrypt data
-	w, err := worker.New(worker.Config{Key: key, Processing: worker.Encryption})
+	s, err := stream.New(stream.Config{Key: key, Processing: stream.Encryption})
 	if err != nil {
 		return fmt.Errorf("failed to create worker: %w", err)
 	}
 
-	return w.Process(srcFile, destFile, srcInfo.Size())
+	return s.Process(srcFile, destFile, srcInfo.Size())
 }
 
 // decryptFile handles file decryption.
@@ -162,7 +162,7 @@ func (a *App) decryptFile(srcPath, destPath string) error {
 	fmt.Printf("Decrypting %s...\n", srcPath)
 
 	// Decrypt data
-	w, err := worker.New(worker.Config{Key: key, Processing: worker.Decryption})
+	s, err := stream.New(stream.Config{Key: key, Processing: stream.Decryption})
 	if err != nil {
 		return fmt.Errorf("failed to create worker: %w", err)
 	}
@@ -172,7 +172,7 @@ func (a *App) decryptFile(srcPath, destPath string) error {
 		return fmt.Errorf("invalid file size: %d", originalSize)
 	}
 
-	return w.Process(srcFile, destFile, int64(originalSize))
+	return s.Process(srcFile, destFile, int64(originalSize))
 }
 
 // getOutputPath determines output path based on mode.
