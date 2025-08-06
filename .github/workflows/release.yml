@@ -47,7 +47,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.get_version.outputs.VERSION }}
-          name: "Release ${{ steps.get_version.outputs.VERSION }}"
+          name: "${{ steps.get_version.outputs.VERSION }}"
           generate_release_notes: true
           make_latest: true
 
@@ -88,8 +88,10 @@ jobs:
         run: |
           ASSET="${{ steps.build.outputs.ASSET_NAME }}"
           HASH=$(shasum -a 256 "$ASSET" | cut -d ' ' -f1)
+          FILENAME=$(basename "$ASSET")
           echo "HASH=$HASH" >> $GITHUB_OUTPUT
-          echo "Generated checksum: $HASH"
+          echo "FILENAME=$FILENAME" >> $GITHUB_OUTPUT
+          echo "Generated checksum: $HASH for $FILENAME"
 
       - name: Upload to release
         uses: softprops/action-gh-release@v2
@@ -100,4 +102,4 @@ jobs:
           append_body: true
           body: |
             **${{ matrix.goos }}-${{ matrix.goarch }}:**
-            `sha256($(basename "${{ steps.build.outputs.ASSET_NAME }}")) = ${{ steps.checksum.outputs.HASH }}`
+            `sha256(${{ steps.checksum.outputs.FILENAME }}) = ${{ steps.checksum.outputs.HASH }}`
