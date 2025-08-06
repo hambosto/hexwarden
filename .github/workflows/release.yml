@@ -69,7 +69,7 @@ jobs:
           OUTPUT_DIR=dist/${FILENAME}
           mkdir -p "$OUTPUT_DIR"
 
-          CGO_ENABLED=0 go build -trimpath -ldflags "-extldflags '-static' -s -w" -o "$OUTPUT_DIR/$BINARY_NAME" ./cmd/hexwarden
+          CGO_ENABLED=0 go build -v -trimpath -ldflags "-extldflags '-static' -s -w" -o "$OUTPUT_DIR/$BINARY_NAME" ./cmd/hexwarden
 
           # Make *nix binaries executable
           if [[ "$GOOS" != "windows" ]]; then
@@ -84,10 +84,12 @@ jobs:
           echo "ASSET_NAME=dist/${FILENAME}.zip" >> "$GITHUB_OUTPUT"
 
       - name: Generate checksums
+        id: checksum
         run: |
           ASSET="${{ steps.build.outputs.ASSET_NAME }}"
           HASH=$(shasum -a 256 "$ASSET" | cut -d ' ' -f1)
-          echo "CHECKSUM_$(echo ${{ matrix.goos }}_${{ matrix.goarch }} | tr '[:lower:]' '[:upper:]')=$HASH" >> $GITHUB_ENV
+          echo "HASH=$HASH" >> $GITHUB_OUTPUT
+          echo "Generated checksum: $HASH"
 
       - name: Upload to release
         uses: softprops/action-gh-release@v2
@@ -98,4 +100,4 @@ jobs:
           append_body: true
           body: |
             **${{ matrix.goos }}-${{ matrix.goarch }}:**
-            `sha256(${{ steps.build.outputs.ASSET_NAME }}) ${{ env[format('CHECKSUM_{0}_{1}', matrix.goos, matrix.goarch)] }}`
+            `sha256($(basename "${{ steps.build.outputs.ASSET_NAME }}")) = ${{ steps.checksum.outputs.HASH }}`
