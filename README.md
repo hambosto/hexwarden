@@ -1,132 +1,101 @@
-# hexwarden
+<div align="center">
+  <h1>Hexwarden</h1>
+  <p>
+    <a href="https://goreportcard.com/report/github.com/hambosto/hexwarden"><img src="https://goreportcard.com/badge/github.com/hambosto/hexwarden" alt="Go Report Card"></a>
+    <a href="https://github.com/hambosto/hexwarden/releases"><img src="https://img.shields.io/github/v/release/hambosto/hexwarden" alt="Latest Release"></a>
+    <a href="https://github.com/hambosto/hexwarden/blob/main/LICENSE"><img src="https://img.shields.io/github/license/hambosto/hexwarden" alt="License"></a>
+  </p>
+</div>
 
-A secure and efficient file encryption tool written in Go that implements encryption with parallel processing capabilities.
+Hexwarden is a command-line tool that makes file encryption simple and secure. It uses strong encryption to protect your files, and it's designed to be easy to use, even if you're not an expert.
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/hambosto/hexwarden)](https://goreportcard.com/report/github.com/hambosto/hexwarden)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+Whether you need to protect sensitive documents, secure backups, or just keep your personal files private, Hexwarden has you covered.
 
 ## Features
 
-- **Strong Encryption**: Uses AES-GCM (Authenticated Encryption with Associated Data)
-- **Data Compression**: Utilizes zlib compression for efficient storage
-- **Parallel Processing**: Leverages multi-core systems for faster encryption/decryption
-- **Progress Tracking**: Real-time progress bar for file operations
-- **Error Recovery**: Built-in error correction using Reed-Solomon encoding
-- **Interactive CLI**: User-friendly command-line interface with file selection
-- **Cross-platform**: Supports Windows, macOS, and Linux
+- **Strong Encryption**: Your files are protected with AES-256-GCM, a modern and secure encryption standard.
+- **User-Friendly**: An interactive command-line interface guides you through the process of encrypting and decrypting files.
+- **Cross-Platform**: Works on Windows, macOS, and Linux.
+- **Secure Deletion**: Option to securely overwrite and delete original files after encryption/decryption.
+- **Open Source**: The code is open for anyone to inspect and contribute to.
 
-⚠️ **Important File Size Notice**: Encrypted files will be significantly larger than the original files due to chunk-based encryption. For example, a 26MB unencrypted file will become approximately 96MB after encryption. Please ensure you have sufficient storage space available before encrypting large files.
+## Getting Started
 
-## Installation
+### Prerequisites
 
-### From Releases
+- **Go**: Version 1.19 or higher (only if building from source).
 
-1. Go to the [Releases](https://github.com/hambosto/hexwarden/releases) page
-2. Download the latest binary for your operating system.
-3. Make the file executable (Unix-based systems):
-   ```bash
-   chmod +x hexwarden*
-   ```
+### Installation
 
-### From Source
+You can either download a pre-built binary or build it from the source.
 
-Requirements:
-- Go 1.19 or higher
-- Git
+**From Releases (Recommended)**
 
-```bash
-# Clone the repository
-git clone https://github.com/hambosto/hexwarden.git
+1.  Go to the [Releases](https://github.com/hambosto/hexwarden/releases) page.
+2.  Download the latest binary for your operating system.
+3.  (On macOS/Linux) Make the file executable:
+    ```bash
+    chmod +x hexwarden
+    ```
 
-# Change to project directory
-cd hexwarden
+**From Source**
 
-# Build the project
-go build -o hexwarden cmd/hexwarden/main.go
-
-# (Optional) Install globally
-go install
-```
+1.  Clone the repository:
+    ```bash
+    git clone https://github.com/hambosto/hexwarden.git
+    ```
+2.  Navigate to the project directory:
+    ```bash
+    cd hexwarden
+    ```
+3.  Build the project:
+    ```bash
+    go build -o hexwarden cmd/hexwarden/main.go
+    ```
 
 ## Usage
 
-1. Run the application:
-   ```bash
-   ./hexwarden
-   ```
+1.  Run Hexwarden from your terminal:
+    ```bash
+    ./hexwarden
+    ```
+2.  Choose whether you want to **Encrypt** or **Decrypt** a file.
+3.  Select the file you want to process from the list.
+4.  Enter a strong password to secure your file.
 
-2. Select operation:
-   - Choose between `Encrypt` or `Decrypt` using arrow keys
+That's it! Hexwarden will take care of the rest. Encrypted files will be saved with a `.hex` extension, and decrypted files will be restored to their original names.
 
-3. Select file:
-   - Navigate through available files using arrow keys
-   - For encryption: shows all non-encrypted files
-   - For decryption: shows only `.hex` files
+## How It Works
 
-The program will process the selected file and display progress in real-time.
+Hexwarden is built with security and simplicity in mind. Here's a quick look at what happens under the hood:
 
-### Encrypted File Format
+1.  **Password-Based Key Derivation**: When you enter a password, Hexwarden uses a Key Derivation Function (KDF) to turn it into a strong encryption key. This makes it much harder for someone to guess your password.
+2.  **Compression**: Before encrypting, your file is compressed. This can make the final encrypted file smaller.
+3.  **Encryption**: The compressed data is then encrypted using AES-256-GCM. This not only secures your data but also ensures that it hasn't been tampered with.
+4.  **Secure Header**: Important information, like the original filename and the salt used for key derivation, is stored in a secure header.
+5.  **Chunk Processing**: For larger files, Hexwarden processes them in smaller chunks, which is more memory-efficient.
 
-- Encrypted files are saved with the `.hex` extension
-- Original filename is preserved when decrypting
-- Files are processed in chunks for efficient memory usage
+## Security
 
-## Security Features
+Hexwarden is designed with a focus on security. Here are some of the key security features:
 
-### Encryption Details
+- **AES-256-GCM**: A strong, authenticated encryption algorithm that provides both confidentiality and integrity.
+- **Argon2id**: A modern, secure Key Derivation Function used to protect your password.
+- **Cryptographically Secure Randomness**: Used for generating nonces and salts to ensure that every encryption is unique.
 
-- **AES-GCM** (Authenticated Encryption with Associated Data)
-  - 256-bit key
-  - Provides confidentiality, integrity, and authenticity
-  - Galois/Counter Mode (GCM) ensures secure and efficient encryption
-
-### Additional Security Measures
-
-- Unique nonces for encryption
-- Secure memory handling with buffer pools
-- Padding and alignment for block cipher security
-- Size header encryption
-
-## Technical Details
-
-### Performance Features
-
-- **Parallel Processing**: Utilizes all available CPU cores
-- **Buffer Pools**: Reduces memory allocations
-- **Chunked Processing**: Handles large files efficiently
-- **Compressed Output**: Reduces encrypted file size with zlib compression
-
-## Building from Source
-
-To build for specific platforms:
-
-```bash
-# Windows
-GOOS=windows GOARCH=amd64 go build -o hexwarden.exe
-
-# macOS
-GOOS=darwin GOARCH=amd64 go build -o hexwarden
-
-# Linux
-GOOS=linux GOARCH=amd64 go build -o hexwarden
-```
+While Hexwarden is designed to be secure, it's important to follow good security practices:
+- Use a strong, unique password.
+- Keep your password safe and don't share it with anyone.
 
 ## Contributing
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+We welcome contributions from the community! If you'd like to help improve Hexwarden, please feel free to:
+
+- Report bugs or suggest new features by opening an [issue](https://github.com/hambosto/hexwarden/issues).
+- Submit a pull request with your improvements.
+
+Please read our [Contributing Guidelines](CONTRIBUTING.md) for more information.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Security Notice
-
-While this tool implements strong encryption algorithms, please note:
-- Keep your encryption keys secure
-- Back up important files before encryption
-- Use strong, unique keys for each file
-- Store nonces securely for decryption
+Hexwarden is open-source software licensed under the [MIT License](LICENSE).
