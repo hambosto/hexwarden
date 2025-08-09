@@ -13,13 +13,14 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version: stable
-          cache: true
           
       - name: Download dependencies
         run: go mod download
@@ -38,13 +39,14 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version: stable
-          cache: true
 
       - name: Download dependencies
         run: go mod download
@@ -58,13 +60,14 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version: stable
-          cache: true
 
       - name: Download dependencies
         run: go mod download
@@ -78,24 +81,25 @@ jobs:
   security:
     name: Security Scanner
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version: stable
-          cache: true
 
       - name: Download dependencies
         run: go mod download
 
-      - name: Run Security Scanner (gosec)
+      - name: Run Security Scanner
         uses: securego/gosec@master
         with:
-          args: '-exclude-dir=.git -exclude-dir=vendor ./...'
+          args: -exclude-dir=.git -exclude-dir=vendor ./...
 
   tests:
     name: Run Tests
@@ -103,13 +107,14 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version: stable
-          cache: true
 
       - name: Download dependencies
         run: go mod download
