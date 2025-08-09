@@ -1,4 +1,4 @@
-name: Code Quality Check
+name: Quality Checks
 
 on:
   push:
@@ -7,99 +7,113 @@ on:
     branches: [ "*" ]
 
 jobs:
-  format:
-    name: Format Check
+  golangci-lint:
+    name: Lint
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version: stable
+          check-latest: true
+          cache: true
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: latest
+          args: --timeout=5m
+
+  gofmt:
+    name: Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          check-latest: true
 
       - name: Check gofmt
         run: |
-          if [ "$(gofmt -l . | wc -l)" -gt 0 ]; then
-            echo "Code is not formatted with gofmt:"
-            gofmt -l .
+          gofmt_files=$(gofmt -l .)
+          if [[ -n "$gofmt_files" ]]; then
+            echo "These files need formatting with gofmt:"
+            echo "$gofmt_files"
             exit 1
           fi
 
-  vet:
-    name: Go Vet
+  gosec:
+    name: Security Check
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version: stable
+          check-latest: true
 
-      - name: Run go vet
-        run: go vet ./...
-
-  lint:
-    name: Linting
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: stable
-
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
-          args: --timeout=3m
-
-  security:
-    name: Security Scanner
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: stable
-
-      - name: Run Security Scanner
+      - name: Run Gosec Security Scanner
         uses: securego/gosec@master
         with:
           args: -exclude-dir=.git -exclude-dir=vendor ./...
 
-  tests:
-    name: Run Tests
+  test:
+    name: Tests
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version: stable
+          check-latest: true
 
-      - name: Run tests
-        run: |
-          echo "Running tests with shorter timeout and verbose output..."
-          go test -timeout=2m -v -race ./tests/compression/...
-          go test -timeout=2m -v -race ./tests/crypto/...
-          go test -timeout=2m -v -race ./tests/data/...
-          go test -timeout=2m -v -race ./tests/utils/...
-          go test -timeout=2m -v -race ./tests/encoding/...
-          echo "All test packages completed successfully"
+      - name: Run Tests
+        run: go test -v ./...
+
+  staticcheck:
+    name: Static Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          check-latest: true
+
+      - name: Install staticcheck
+        run: go install honnef.co/go/tools/cmd/staticcheck@latest
+
+      - name: Run staticcheck
+        run: staticcheck ./...
+
+  go-vet:
+    name: Go Vet
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          check-latest: true
+
+      - name: Run go vet
+        run: go vet ./...
