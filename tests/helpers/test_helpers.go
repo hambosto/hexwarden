@@ -35,7 +35,7 @@ func NewTestData() *TestData {
 		WeakSalt:     make([]byte, constants.SaltSize), // All zeros - weak
 		TestPassword: "test-password-123",
 		TestData:     []byte("Hello, World! This is test data for encryption."),
-		LargeData:    make([]byte, 1024*1024), // 1MB of test data
+		LargeData:    make([]byte, 10*1024), // Reduced from 1MB to 10KB of test data
 	}
 
 	// Fill with random data

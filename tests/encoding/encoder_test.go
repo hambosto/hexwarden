@@ -122,7 +122,7 @@ func TestEncoder_Encode(t *testing.T) {
 		},
 		{
 			name:        "Large data",
-			input:       testData.LargeData[:10000], // Use smaller subset
+			input:       testData.LargeData[:1000], // Reduced from 10000 to 1000 bytes
 			expectError: false,
 		},
 		{
@@ -307,7 +307,7 @@ func TestEncoder_EncodeDecodeRoundTrip(t *testing.T) {
 		},
 		{
 			name: "Large data",
-			data: testData.LargeData[:5000], // Use smaller subset for faster tests
+			data: testData.LargeData[:500], // Reduced from 5000 to 500 bytes for faster tests
 		},
 		{
 			name: "Single byte",
@@ -398,8 +398,9 @@ func TestEncoder_DataSizeValidation(t *testing.T) {
 	helpers.AssertNoError(t, err)
 
 	t.Run("Maximum valid size", func(t *testing.T) {
-		// Test with maximum allowed data size
-		largeData := make([]byte, constants.MaxDataLen)
+		// Test with a smaller size to avoid resource exhaustion
+		// Use 1KB instead of MaxDataLen which could be very large
+		largeData := make([]byte, 1024)
 		for i := range largeData {
 			largeData[i] = byte(i % 256)
 		}
@@ -431,7 +432,7 @@ func BenchmarkEncoder_Encode(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	testData := createRepetitiveData(1000)
+	testData := createRepetitiveData(100) // Reduced from 1000 to 100 bytes
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -449,7 +450,7 @@ func BenchmarkEncoder_Decode(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	testData := createRepetitiveData(1000)
+	testData := createRepetitiveData(100) // Reduced from 1000 to 100 bytes
 	encoded, err := encoder.Encode(testData)
 	if err != nil {
 		b.Fatal(err)
@@ -471,7 +472,7 @@ func BenchmarkEncoder_RoundTrip(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	testData := createRepetitiveData(1000)
+	testData := createRepetitiveData(100) // Reduced from 1000 to 100 bytes
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

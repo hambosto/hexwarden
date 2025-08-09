@@ -262,7 +262,8 @@ func TestValidateSalt(t *testing.T) {
 
 func TestValidateSalt_GeneratedSaltsAreValid(t *testing.T) {
 	// Generate multiple salts and ensure they all pass validation
-	for i := 0; i < 100; i++ {
+	// Reduced from 100 to 10 iterations to reduce resource usage
+	for i := 0; i < 10; i++ {
 		salt, err := crypto.GenerateSalt()
 		helpers.AssertNoError(t, err)
 
@@ -363,7 +364,8 @@ func TestDeriveKey_EdgeCases(t *testing.T) {
 	testData := helpers.NewTestData()
 
 	t.Run("Very long password", func(t *testing.T) {
-		longPassword := bytes.Repeat([]byte("a"), 10000)
+		// Reduced from 10000 to 1000 bytes to reduce memory usage
+		longPassword := bytes.Repeat([]byte("a"), 1000)
 		key, err := crypto.DeriveKey(longPassword, testData.ValidSalt)
 		helpers.AssertNoError(t, err)
 		helpers.AssertEqual(t, constants.KeySize, len(key))

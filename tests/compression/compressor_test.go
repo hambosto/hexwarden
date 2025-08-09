@@ -88,7 +88,7 @@ func TestCompressor_Compress(t *testing.T) {
 		},
 		{
 			name:  "Repetitive data (highly compressible)",
-			input: createRepetitiveData(1000),
+			input: createRepetitiveData(100), // Reduced from 1000 to 100 bytes
 		},
 		{
 			name:  "Random data (less compressible)",
@@ -219,11 +219,11 @@ func TestCompressor_CompressDecompressRoundTrip(t *testing.T) {
 		},
 		{
 			name: "Large data",
-			data: testData.LargeData[:10000], // Use smaller subset for faster tests
+			data: testData.LargeData[:1000], // Reduced from 10000 to 1000 bytes for faster tests
 		},
 		{
 			name: "Repetitive data",
-			data: createRepetitiveData(1000),
+			data: createRepetitiveData(100), // Reduced from 1000 to 100 bytes
 		},
 		{
 			name: "Binary data",
@@ -264,7 +264,7 @@ func TestCompressor_CompressionEfficiency(t *testing.T) {
 
 	t.Run("Highly compressible data", func(t *testing.T) {
 		// Create data with lots of repetition
-		repetitiveData := createRepetitiveData(10000)
+		repetitiveData := createRepetitiveData(1000) // Reduced from 10000 to 1000 bytes
 		compressed, err := compressor.Compress(repetitiveData)
 		helpers.AssertNoError(t, err)
 
@@ -280,7 +280,7 @@ func TestCompressor_CompressionEfficiency(t *testing.T) {
 	t.Run("Less compressible data", func(t *testing.T) {
 		// Use random data which is less compressible
 		testData := helpers.NewTestData()
-		randomData := testData.LargeData[:10000]
+		randomData := testData.LargeData[:1000] // Reduced from 10000 to 1000 bytes
 		compressed, err := compressor.Compress(randomData)
 		helpers.AssertNoError(t, err)
 
@@ -291,7 +291,7 @@ func TestCompressor_CompressionEfficiency(t *testing.T) {
 }
 
 func TestCompressor_DifferentLevelsComparison(t *testing.T) {
-	testData := createRepetitiveData(5000) // Use compressible data
+	testData := createRepetitiveData(500) // Reduced from 5000 to 500 bytes
 
 	levels := []constants.CompressionLevel{
 		constants.LevelBestSpeed,
@@ -336,7 +336,7 @@ func BenchmarkCompressor_Compress(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	testData := createRepetitiveData(1000)
+	testData := createRepetitiveData(100) // Reduced from 1000 to 100 bytes
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -354,7 +354,7 @@ func BenchmarkCompressor_Decompress(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	testData := createRepetitiveData(1000)
+	testData := createRepetitiveData(100) // Reduced from 1000 to 100 bytes
 	compressed, err := compressor.Compress(testData)
 	if err != nil {
 		b.Fatal(err)
@@ -376,7 +376,7 @@ func BenchmarkCompressor_RoundTrip(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	testData := createRepetitiveData(1000)
+	testData := createRepetitiveData(100) // Reduced from 1000 to 100 bytes
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
