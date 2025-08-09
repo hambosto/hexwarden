@@ -76,6 +76,7 @@ func (m *Manager) OpenFile(path string) (*os.File, os.FileInfo, error) {
 		if closeErr := file.Close(); closeErr != nil {
 			// Log close error but don't override the main error
 			// In a production environment, this would be logged properly
+			_ = closeErr // Explicitly ignore the close error to avoid overriding the main error
 		}
 		return nil, nil, fmt.Errorf("failed to get file info: %w", err)
 	}
@@ -110,6 +111,7 @@ func (m *Manager) secureDelete(path string) error {
 		if err := file.Close(); err != nil {
 			// Log error but don't override the main error
 			// In a production environment, this would be logged properly
+			_ = err // Explicitly ignore the close error to avoid overriding the main error
 		}
 	}()
 

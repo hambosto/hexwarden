@@ -190,7 +190,7 @@ func AssertFileNotExists(t *testing.T, path string) {
 // ReadFileContent reads the entire content of a file
 func ReadFileContent(t *testing.T, path string) []byte {
 	t.Helper()
-	content, err := os.ReadFile(path)
+	content, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		t.Fatalf("Failed to read file %s: %v", path, err)
 	}
@@ -200,7 +200,7 @@ func ReadFileContent(t *testing.T, path string) []byte {
 // WriteFileContent writes content to a file
 func WriteFileContent(t *testing.T, path string, content []byte) {
 	t.Helper()
-	if err := os.WriteFile(path, content, 0o644); err != nil {
+	if err := os.WriteFile(path, content, 0o600); err != nil {
 		t.Fatalf("Failed to write file %s: %v", path, err)
 	}
 }
@@ -296,7 +296,7 @@ func CreateTestFiles(t *testing.T, dir string, files map[string][]byte) {
 	t.Helper()
 	for name, content := range files {
 		path := filepath.Join(dir, name)
-		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
 			t.Fatalf("Failed to create directory for %s: %v", path, err)
 		}
 		WriteFileContent(t, path, content)

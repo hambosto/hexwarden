@@ -50,11 +50,11 @@ func (c *TestConfig) CreateTestFile(t *testing.T, name string, content []byte) s
 	path := filepath.Join(c.TempDir, name)
 	dir := filepath.Dir(path)
 
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o750); err != nil {
 		t.Fatalf("Failed to create directory %s: %v", dir, err)
 	}
 
-	if err := os.WriteFile(path, content, 0o644); err != nil {
+	if err := os.WriteFile(path, content, 0o600); err != nil {
 		t.Fatalf("Failed to write file %s: %v", path, err)
 	}
 
@@ -76,7 +76,7 @@ func GetTestDataDir() string {
 // EnsureTestDataDir creates the test data directory if it doesn't exist
 func EnsureTestDataDir(t *testing.T) string {
 	dir := GetTestDataDir()
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o750); err != nil {
 		t.Fatalf("Failed to create test data dir: %v", err)
 	}
 	return dir

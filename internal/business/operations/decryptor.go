@@ -34,6 +34,7 @@ func (d *Decryptor) DecryptFile(srcPath, destPath, password string, progressCall
 	defer func() {
 		if err := srcFile.Close(); err != nil {
 			// Log error but don't override the main error
+			_ = err // Explicitly ignore the close error to avoid overriding the main error
 		}
 	}()
 
@@ -67,6 +68,7 @@ func (d *Decryptor) DecryptFile(srcPath, destPath, password string, progressCall
 	defer func() {
 		if err := destFile.Close(); err != nil {
 			// Log error but don't override the main error
+			_ = err // Explicitly ignore the close error to avoid overriding the main error
 		}
 	}()
 

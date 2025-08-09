@@ -8,6 +8,9 @@ import (
 	"github.com/hambosto/hexwarden/internal/constants"
 )
 
+// MaxDecompressionSize limits the maximum size of decompressed data to prevent decompression bombs
+const MaxDecompressionSize = 100 * 1024 * 1024 // 100MB
+
 // Compressor handles data compression and decompression using gzip
 type Compressor struct {
 	level int
@@ -77,7 +80,9 @@ func (c *Compressor) Decompress(data []byte) ([]byte, error) {
 	}()
 
 	var buf bytes.Buffer
-	if _, err := io.Copy(&buf, reader); err != nil {
+	// Use LimitReader to prevent decompression bombs
+	limitedReader := io.LimitReader(reader, MaxDecompressionSize)
+	if _, err := io.Copy(&buf, limitedReader); err != nil {
 		return nil, constants.ErrDecompressionFailed
 	}
 
