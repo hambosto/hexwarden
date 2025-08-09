@@ -14,16 +14,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version: stable
-          
-      - name: Download dependencies
-        run: go mod download
 
       - name: Check gofmt
         run: |
@@ -40,16 +35,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version: stable
-
-      - name: Download dependencies
-        run: go mod download
 
       - name: Run go vet
         run: go vet ./...
@@ -61,16 +51,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version: stable
-
-      - name: Download dependencies
-        run: go mod download
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v6
@@ -85,16 +70,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version: stable
-
-      - name: Download dependencies
-        run: go mod download
 
       - name: Run Security Scanner
         uses: securego/gosec@master
@@ -108,16 +88,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version: stable
-
-      - name: Download dependencies
-        run: go mod download
 
       - name: Run tests
         run: |
