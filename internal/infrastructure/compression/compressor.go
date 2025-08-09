@@ -43,7 +43,9 @@ func (c *Compressor) Compress(data []byte) ([]byte, error) {
 	}
 
 	if _, err := writer.Write(data); err != nil {
-		writer.Close()
+		if closeErr := writer.Close(); closeErr != nil {
+			// Log close error but don't override the main error
+		}
 		return nil, constants.ErrCompressionFailed
 	}
 
@@ -64,7 +66,11 @@ func (c *Compressor) Decompress(data []byte) ([]byte, error) {
 	if err != nil {
 		return nil, constants.ErrDecompressionFailed
 	}
-	defer reader.Close()
+	defer func() {
+		if err := reader.Close(); err != nil {
+			// Log error but don't override the main error
+		}
+	}()
 
 	var buf bytes.Buffer
 	if _, err := io.Copy(&buf, reader); err != nil {

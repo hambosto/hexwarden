@@ -39,9 +39,15 @@ func NewTestData() *TestData {
 	}
 
 	// Fill with random data
-	rand.Read(td.ValidKey32)
-	rand.Read(td.ValidKey24)
-	rand.Read(td.ValidKey16)
+	if _, err := rand.Read(td.ValidKey32); err != nil {
+		panic("Failed to generate random key: " + err.Error())
+	}
+	if _, err := rand.Read(td.ValidKey24); err != nil {
+		panic("Failed to generate random key: " + err.Error())
+	}
+	if _, err := rand.Read(td.ValidKey16); err != nil {
+		panic("Failed to generate random key: " + err.Error())
+	}
 	rand.Read(td.InvalidKey)
 	rand.Read(td.ValidSalt)
 	rand.Read(td.LargeData)
@@ -61,13 +67,19 @@ func CreateTempFile(t *testing.T, content []byte) string {
 	}
 
 	if _, err := tmpFile.Write(content); err != nil {
-		tmpFile.Close()
-		os.Remove(tmpFile.Name())
+		if closeErr := tmpFile.Close(); closeErr != nil {
+			t.Logf("Warning: Failed to close temp file: %v", closeErr)
+		}
+		if removeErr := os.Remove(tmpFile.Name()); removeErr != nil {
+			t.Logf("Warning: Failed to remove temp file: %v", removeErr)
+		}
 		t.Fatalf("Failed to write to temp file: %v", err)
 	}
 
 	if err := tmpFile.Close(); err != nil {
-		os.Remove(tmpFile.Name())
+		if removeErr := os.Remove(tmpFile.Name()); removeErr != nil {
+			t.Logf("Warning: Failed to remove temp file: %v", removeErr)
+		}
 		t.Fatalf("Failed to close temp file: %v", err)
 	}
 

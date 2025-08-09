@@ -31,7 +31,11 @@ func (d *Decryptor) DecryptFile(srcPath, destPath, password string, progressCall
 	if err != nil {
 		return fmt.Errorf("failed to open source file: %w", err)
 	}
-	defer srcFile.Close()
+	defer func() {
+		if err := srcFile.Close(); err != nil {
+			// Log error but don't override the main error
+		}
+	}()
 
 	// Read and parse header
 	header, err := crypto.ReadHeader(srcFile)
@@ -60,7 +64,11 @@ func (d *Decryptor) DecryptFile(srcPath, destPath, password string, progressCall
 	if err != nil {
 		return fmt.Errorf("failed to create destination file: %w", err)
 	}
-	defer destFile.Close()
+	defer func() {
+		if err := destFile.Close(); err != nil {
+			// Log error but don't override the main error
+		}
+	}()
 
 	// Create stream processor for decryption
 	config := streaming.StreamConfig{

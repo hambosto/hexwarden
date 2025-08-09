@@ -73,7 +73,9 @@ func (m *Manager) OpenFile(path string) (*os.File, os.FileInfo, error) {
 
 	info, err := file.Stat()
 	if err != nil {
-		file.Close()
+		if closeErr := file.Close(); closeErr != nil {
+			// Log close error but don't override the main error
+		}
 		return nil, nil, fmt.Errorf("failed to get file info: %w", err)
 	}
 	return file, info, nil
@@ -103,7 +105,11 @@ func (m *Manager) secureDelete(path string) error {
 	if err != nil {
 		return fmt.Errorf("%w: failed to open file for secure deletion: %v", constants.ErrSecureDeleteFailed, err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			// Log error but don't override the main error
+		}
+	}()
 
 	info, err := file.Stat()
 	if err != nil {
@@ -118,7 +124,9 @@ func (m *Manager) secureDelete(path string) error {
 	}
 
 	// Close the file before removing it
-	file.Close()
+	if err := file.Close(); err != nil {
+		return fmt.Errorf("%w: failed to close file before removal: %v", constants.ErrSecureDeleteFailed, err)
+	}
 
 	// Finally remove the file
 	if err := os.Remove(path); err != nil {

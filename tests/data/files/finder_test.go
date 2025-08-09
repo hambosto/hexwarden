@@ -26,7 +26,11 @@ func TestFinder_FindEligibleFiles(t *testing.T) {
 	// Change to temp directory for testing
 	originalDir, err := os.Getwd()
 	helpers.AssertNoError(t, err)
-	defer os.Chdir(originalDir)
+	defer func() {
+		if err := os.Chdir(originalDir); err != nil {
+			t.Logf("Warning: Failed to restore original directory: %v", err)
+		}
+	}()
 
 	err = os.Chdir(tmpDir)
 	helpers.AssertNoError(t, err)
@@ -264,7 +268,11 @@ func TestFinder_ExclusionRules(t *testing.T) {
 	// Change to temp directory for testing
 	originalDir, err := os.Getwd()
 	helpers.AssertNoError(t, err)
-	defer os.Chdir(originalDir)
+	defer func() {
+		if err := os.Chdir(originalDir); err != nil {
+			t.Logf("Warning: Failed to restore original directory: %v", err)
+		}
+	}()
 
 	err = os.Chdir(tmpDir)
 	helpers.AssertNoError(t, err)
@@ -306,7 +314,11 @@ func TestFinder_EmptyDirectory(t *testing.T) {
 	// Change to temp directory for testing
 	originalDir, err := os.Getwd()
 	helpers.AssertNoError(t, err)
-	defer os.Chdir(originalDir)
+	defer func() {
+		if err := os.Chdir(originalDir); err != nil {
+			t.Logf("Warning: Failed to restore original directory: %v", err)
+		}
+	}()
 
 	err = os.Chdir(tmpDir)
 	helpers.AssertNoError(t, err)

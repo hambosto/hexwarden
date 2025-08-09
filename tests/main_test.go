@@ -31,7 +31,9 @@ func setupGlobalTestEnvironment() {
 	}
 
 	// Set any global test environment variables
-	os.Setenv("HEXWARDEN_TEST_MODE", "true")
+	if err := os.Setenv("HEXWARDEN_TEST_MODE", "true"); err != nil {
+		fmt.Printf("Warning: Failed to set test environment variable: %v\n", err)
+	}
 
 	fmt.Println("Global test environment setup complete")
 }
@@ -39,7 +41,9 @@ func setupGlobalTestEnvironment() {
 // cleanupGlobalTestEnvironment cleans up the global test environment
 func cleanupGlobalTestEnvironment() {
 	// Clean up any global test resources
-	os.Unsetenv("HEXWARDEN_TEST_MODE")
+	if err := os.Unsetenv("HEXWARDEN_TEST_MODE"); err != nil {
+		fmt.Printf("Warning: Failed to unset test environment variable: %v\n", err)
+	}
 
 	fmt.Println("Global test environment cleanup complete")
 }

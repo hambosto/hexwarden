@@ -30,14 +30,22 @@ func (e *Encryptor) EncryptFile(srcPath, destPath, password string, progressCall
 	if err != nil {
 		return fmt.Errorf("failed to open source file: %w", err)
 	}
-	defer srcFile.Close()
+	defer func() {
+		if err := srcFile.Close(); err != nil {
+			// Log error but don't override the main error
+		}
+	}()
 
 	// Create destination file
 	destFile, err := e.fileManager.CreateFile(destPath)
 	if err != nil {
 		return fmt.Errorf("failed to create destination file: %w", err)
 	}
-	defer destFile.Close()
+	defer func() {
+		if err := destFile.Close(); err != nil {
+			// Log error but don't override the main error
+		}
+	}()
 
 	// Generate salt for key derivation
 	salt, err := crypto.GenerateSalt()

@@ -56,7 +56,11 @@ func (p *CLIProcessor) Encrypt(inputFile, outputFile, password string, deleteSou
 
 	// Create progress bar
 	progressBar := ui.NewProgressBar(fileInfo.Size(), "Encrypting")
-	defer progressBar.Finish()
+	defer func() {
+		if err := progressBar.Finish(); err != nil {
+			// Log error but don't override the main error
+		}
+	}()
 
 	fmt.Printf("Encrypting: %s -> %s\n", inputFile, outputFile)
 
@@ -107,7 +111,11 @@ func (p *CLIProcessor) Decrypt(inputFile, outputFile, password string, deleteSou
 
 	// Create progress bar
 	progressBar := ui.NewProgressBar(fileInfo.Size(), "Decrypting")
-	defer progressBar.Finish()
+	defer func() {
+		if err := progressBar.Finish(); err != nil {
+			// Log error but don't override the main error
+		}
+	}()
 
 	fmt.Printf("Decrypting: %s -> %s\n", inputFile, outputFile)
 

@@ -482,7 +482,9 @@ func createCorruptedChecksumHeader() []byte {
 	header, _ := crypto.NewHeader(testData.ValidSalt, 1024, testData.ValidKey32)
 
 	var buf bytes.Buffer
-	header.Write(&buf)
+	if err := header.Write(&buf); err != nil {
+		// Handle error but don't fail test setup
+	}
 	data := buf.Bytes()
 
 	// Corrupt the checksum (last 4 bytes)
@@ -495,7 +497,9 @@ func createTamperedHeader() []byte {
 	header, _ := crypto.NewHeader(testData.ValidSalt, 1024, testData.ValidKey32)
 
 	var buf bytes.Buffer
-	header.Write(&buf)
+	if err := header.Write(&buf); err != nil {
+		// Handle error but don't fail test setup
+	}
 	data := buf.Bytes()
 
 	// Tamper with salt data (position 10)

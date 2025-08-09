@@ -76,7 +76,9 @@ func (p *ProgressBar) GetProcessingRate() float64 {
 // CreateCallback creates a progress callback function for use with streaming
 func (p *ProgressBar) CreateCallback() func(int64) {
 	return func(size int64) {
-		p.Add(size)
+		if err := p.Add(size); err != nil {
+			// Log error but don't stop processing
+		}
 	}
 }
 

@@ -78,7 +78,10 @@ func (c *CLI) createEncryptCommand() *cobra.Command {
 	cmd.Flags().BoolVar(&deleteSource, "delete-source", false, "Delete source file after encryption")
 	cmd.Flags().BoolVar(&secureDelete, "secure-delete", false, "Use secure deletion (slower but unrecoverable)")
 
-	cmd.MarkFlagRequired("input")
+	if err := cmd.MarkFlagRequired("input"); err != nil {
+		// This should not happen in normal circumstances
+		panic(fmt.Sprintf("failed to mark input flag as required: %v", err))
+	}
 
 	return cmd
 }
@@ -111,7 +114,10 @@ func (c *CLI) createDecryptCommand() *cobra.Command {
 	cmd.Flags().BoolVar(&deleteSource, "delete-source", false, "Delete source file after decryption")
 	cmd.Flags().BoolVar(&secureDelete, "secure-delete", false, "Use secure deletion (slower but unrecoverable)")
 
-	cmd.MarkFlagRequired("input")
+	if err := cmd.MarkFlagRequired("input"); err != nil {
+		// This should not happen in normal circumstances
+		panic(fmt.Sprintf("failed to mark input flag as required: %v", err))
+	}
 
 	return cmd
 }

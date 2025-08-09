@@ -174,7 +174,11 @@ func (a *InteractiveApp) encryptFile(srcPath, destPath string) error {
 
 	// Create progress bar
 	progressBar := ui.NewProgressBar(fileInfo.Size(), "Encrypting")
-	defer progressBar.Finish()
+	defer func() {
+		if err := progressBar.Finish(); err != nil {
+			// Log error but don't override the main error
+		}
+	}()
 
 	// Perform encryption
 	err = a.encryptor.EncryptFile(srcPath, destPath, password, progressBar.CreateCallback())
@@ -203,7 +207,11 @@ func (a *InteractiveApp) decryptFile(srcPath, destPath string) error {
 
 	// Create progress bar
 	progressBar := ui.NewProgressBar(fileInfo.Size(), "Decrypting")
-	defer progressBar.Finish()
+	defer func() {
+		if err := progressBar.Finish(); err != nil {
+			// Log error but don't override the main error
+		}
+	}()
 
 	// Perform decryption
 	err = a.decryptor.DecryptFile(srcPath, destPath, password, progressBar.CreateCallback())
