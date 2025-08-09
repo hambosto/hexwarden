@@ -58,7 +58,9 @@ func (p *CLIProcessor) Encrypt(inputFile, outputFile, password string, deleteSou
 	progressBar := ui.NewProgressBar(fileInfo.Size(), "Encrypting")
 	defer func() {
 		if err := progressBar.Finish(); err != nil {
-			// Log error but don't override the main error
+			// Log close error but don't override the main error
+			// In a production environment, this would be logged properly
+			_ = err // Explicitly ignore the close error to avoid overriding the main error
 		}
 	}()
 
