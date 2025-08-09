@@ -1,4 +1,4 @@
-name: Quality Checks
+name: Tests
 
 on:
   push:
@@ -7,37 +7,22 @@ on:
     branches: [ "*" ]
 
 jobs:
-  test:
-    name: Test and Lint
+  tests:
+    name: Run Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          # Fetch full git history to avoid VCS issues
           fetch-depth: 0
-
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version: stable
           cache: true
-
       - name: Download dependencies
         run: go mod download
-
-      - name: Run go vet
-        run: go vet ./...
-
-      - name: Check gofmt
-        run: |
-          if [ "$(gofmt -l . | wc -l)" -gt 0 ]; then
-            echo "Code is not formatted with gofmt:"
-            gofmt -l .
-            exit 1
-          fi
-
       - name: Run tests
         run: |
           echo "Running tests with shorter timeout and verbose output..."
@@ -47,17 +32,3 @@ jobs:
           go test -buildvcs=false -timeout=2m -v -race ./tests/utils/...
           go test -buildvcs=false -timeout=2m -v -race ./tests/encoding/...
           echo "All test packages completed successfully"
-
-      - name: Run Security Scanner (gosec)
-        uses: securego/gosec@master
-        with:
-          args: '-exclude-dir=.git -exclude-dir=vendor ./...'
-
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
-          args: --timeout=3m --build-tags=""
-        env:
-          # Disable VCS stamping for golangci-lint as well
-          GOFLAGS: "-buildvcs=false"

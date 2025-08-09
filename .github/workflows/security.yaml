@@ -1,0 +1,29 @@
+name: Security Scanner
+
+on:
+  push:
+    branches: [ "*" ]
+  pull_request:
+    branches: [ "*" ]
+
+jobs:
+  security:
+    name: Security Scanner
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache: true
+      - name: Download dependencies
+        run: go mod download
+      - name: Run Security Scanner (gosec)
+        uses: securego/gosec@master
+        with:
+          args: '-exclude-dir=.git -exclude-dir=vendor ./...'
