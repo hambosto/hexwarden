@@ -1,5 +1,5 @@
 <div align="center">
-  <h1>Hexwarden v1.1</h1>
+  <h1>HexWarden</h1>
   <p>
     <a href="https://goreportcard.com/report/github.com/hambosto/hexwarden"><img src="https://goreportcard.com/badge/github.com/hambosto/hexwarden" alt="Go Report Card"></a>
     <a href="https://github.com/hambosto/hexwarden/releases"><img src="https://img.shields.io/github/v/release/hambosto/hexwarden" alt="Latest Release"></a>
@@ -7,9 +7,9 @@
   </p>
 </div>
 
-**Hexwarden v1.1** is a completely refactored command-line file encryption tool that makes secure file protection simple and reliable. Built with a clean layered architecture, it uses strong encryption algorithms and maintains high performance through concurrent processing.
+**Hexwarden** is a completely refactored command-line file encryption tool that makes secure file protection simple and reliable. Built with a clean layered architecture, it uses strong encryption algorithms and maintains high performance through concurrent processing.
 
-## 🚀 What's New in v1.1
+## 🚀 What's New
 
 - **🏗️ Complete Refactoring**: Clean 4-layer architecture with clear separation of concerns
 - **⚙️ No Configuration Files**: All settings embedded in [`internal/constants/config.go`](internal/constants/config.go) - no JSON, YAML, or ENV files
@@ -34,7 +34,7 @@
 
 ## Architecture
 
-Hexwarden v1.1 uses a clean 4-layer architecture:
+Hexwarden uses a clean 4-layer architecture:
 
 ```
 ┌─────────────────────────────────────────┐
@@ -90,7 +90,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed technical documentation.
 
 ## Usage
 
-Hexwarden v1.1 supports both interactive and command-line modes:
+Hexwarden supports both interactive and command-line modes:
 
 ### Interactive Mode (Default)
 
@@ -155,7 +155,7 @@ The [`cmd/`](cmd) directory contains lightweight wrapper functions that delegate
 
 ## How It Works
 
-Hexwarden v1.1 uses a sophisticated multi-stage processing pipeline:
+Hexwarden uses a sophisticated multi-stage processing pipeline:
 
 ### Encryption Pipeline
 ```
@@ -178,7 +178,7 @@ Input File → Reed-Solomon → AES-256-GCM → Unpadding → Decompression → 
 
 ## Security
 
-Hexwarden v1.1 is designed with security as the top priority:
+Hexwarden is designed with security as the top priority:
 
 ### Cryptographic Features
 - **AES-256-GCM**: Industry-standard authenticated encryption
@@ -195,7 +195,7 @@ Hexwarden v1.1 is designed with security as the top priority:
 
 ## Performance
 
-Hexwarden v1.1 is optimized for performance:
+Hexwarden is optimized for performance:
 
 - **⚡ Concurrent Processing**: Multi-threaded encryption/decryption
 - **🔄 Streaming**: Memory-efficient processing of large files
@@ -305,7 +305,7 @@ hexwarden/
 
 ## Future Compatibility
 
-Hexwarden v1.1 is designed for future compatibility:
+Hexwarden is designed for future compatibility:
 
 - **✅ Same File Format**: Existing encrypted files work without changes
 - **✅ Same Security**: All cryptographic features preserved
@@ -348,6 +348,6 @@ Hexwarden is open-source software licensed under the [MIT License](LICENSE).
 ---
 
 <div align="center">
-  <p><strong>Hexwarden v1.1 - Secure, Fast, Simple</strong></p>
+  <p><strong>Hexwarden - Secure, Fast, Simple</strong></p>
   <p>Made with ❤️ for secure file encryption</p>
 </div>

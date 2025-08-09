@@ -1,4 +1,4 @@
-# Hexwarden v1.1 - Refactored Architecture
+# Hexwarden - Refactored Architecture
 
 ## Overview
 
@@ -267,7 +267,7 @@ Input File → Reed-Solomon → AES-256-GCM → Unpadding → Decompression → 
 
 ## Conclusion
 
-The refactored Hexwarden v1.1 provides:
+The refactored Hexwarden provides:
 - **Cleaner Architecture**: Layered design with clear separation
 - **No External Config**: Everything embedded in code
 - **Maintained Performance**: All concurrent features preserved
