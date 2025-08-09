@@ -48,7 +48,7 @@ jobs:
       - name: Run Security Scanner (gosec)
         uses: securego/gosec@master
         with:
-          args: '-exclude-dir=.git -exclude-dir=vendor ./...'
+          args: '-exclude-dir=.git -exclude-dir=vendor -buildvcs=false ./...'
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v6
