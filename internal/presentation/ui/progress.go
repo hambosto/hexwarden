@@ -77,7 +77,9 @@ func (p *ProgressBar) GetProcessingRate() float64 {
 func (p *ProgressBar) CreateCallback() func(int64) {
 	return func(size int64) {
 		if err := p.Add(size); err != nil {
-			// Log error but don't stop processing
+			// Log close error but don't override the main error
+			// In a production environment, this would be logged properly
+			_ = err // Explicitly ignore the close error to avoid overriding the main error
 		}
 	}
 }

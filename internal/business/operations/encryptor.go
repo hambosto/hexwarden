@@ -32,7 +32,9 @@ func (e *Encryptor) EncryptFile(srcPath, destPath, password string, progressCall
 	}
 	defer func() {
 		if err := srcFile.Close(); err != nil {
-			// Log error but don't override the main error
+			// Log close error but don't override the main error
+			// In a production environment, this would be logged properly
+			_ = err // Explicitly ignore the close error to avoid overriding the main error
 		}
 	}()
 
@@ -43,7 +45,9 @@ func (e *Encryptor) EncryptFile(srcPath, destPath, password string, progressCall
 	}
 	defer func() {
 		if err := destFile.Close(); err != nil {
-			// Log error but don't override the main error
+			// Log close error but don't override the main error
+			// In a production environment, this would be logged properly
+			_ = err // Explicitly ignore the close error to avoid overriding the main error
 		}
 	}()
 
