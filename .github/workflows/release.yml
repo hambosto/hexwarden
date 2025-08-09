@@ -69,7 +69,7 @@ jobs:
           OUTPUT_DIR=dist/${FILENAME}
           mkdir -p "$OUTPUT_DIR"
 
-          CGO_ENABLED=0 go build -v -trimpath -ldflags "-extldflags '-static' -s -w" -o "$OUTPUT_DIR/$BINARY_NAME" ./cmd/hexwarden
+          CGO_ENABLED=0 go build -v -trimpath -ldflags "-extldflags '-static' -s -w" -o "$OUTPUT_DIR/$BINARY_NAME" .
 
           # Make *nix binaries executable
           if [[ "$GOOS" != "windows" ]]; then

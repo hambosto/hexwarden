@@ -1,0 +1,14 @@
+This is a sample text file for testing HexWarden encryption and decryption functionality.
+
+It contains multiple lines of text with various characters:
+- ASCII characters: ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789
+- Special characters: !@#$%^&*()_+-=[]{}|;':\",./<>?
+- Unicode characters: αβγδε ñáéíóú 中文 日本語 русский
+
+This file is designed to test:
+1. Basic text encryption/decryption
+2. Character encoding preservation
+3. Multi-line content handling
+4. Various character sets
+
+The content is intentionally varied to ensure comprehensive testing of the encryption system.
