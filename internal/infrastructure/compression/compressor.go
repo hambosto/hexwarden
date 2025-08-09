@@ -45,6 +45,8 @@ func (c *Compressor) Compress(data []byte) ([]byte, error) {
 	if _, err := writer.Write(data); err != nil {
 		if closeErr := writer.Close(); closeErr != nil {
 			// Log close error but don't override the main error
+			// In a production environment, this would be logged properly
+			_ = closeErr // Explicitly ignore the close error to avoid overriding the main error
 		}
 		return nil, constants.ErrCompressionFailed
 	}
@@ -69,6 +71,8 @@ func (c *Compressor) Decompress(data []byte) ([]byte, error) {
 	defer func() {
 		if err := reader.Close(); err != nil {
 			// Log error but don't override the main error
+			// In a production environment, this would be logged properly
+			_ = err // Explicitly ignore the close error to avoid overriding the main error
 		}
 	}()
 

@@ -346,7 +346,11 @@ func TestFinder_NestedDirectories(t *testing.T) {
 	// Change to temp directory for testing
 	originalDir, err := os.Getwd()
 	helpers.AssertNoError(t, err)
-	defer os.Chdir(originalDir)
+	defer func() {
+		if err := os.Chdir(originalDir); err != nil {
+			t.Logf("Warning: Failed to restore original directory: %v", err)
+		}
+	}()
 
 	err = os.Chdir(tmpDir)
 	helpers.AssertNoError(t, err)
@@ -413,8 +417,14 @@ func BenchmarkFinder_FindEligibleFiles(b *testing.B) {
 
 	// Change to temp directory
 	originalDir, _ := os.Getwd()
-	defer os.Chdir(originalDir)
-	os.Chdir(tmpDir)
+	defer func() {
+		if err := os.Chdir(originalDir); err != nil {
+			// Log error but don't fail benchmark
+		}
+	}()
+	if err := os.Chdir(tmpDir); err != nil {
+		b.Fatalf("Failed to change to temp directory: %v", err)
+	}
 
 	// Create many test files
 	testFiles := make(map[string][]byte)

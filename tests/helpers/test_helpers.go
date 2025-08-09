@@ -48,9 +48,15 @@ func NewTestData() *TestData {
 	if _, err := rand.Read(td.ValidKey16); err != nil {
 		panic("Failed to generate random key: " + err.Error())
 	}
-	rand.Read(td.InvalidKey)
-	rand.Read(td.ValidSalt)
-	rand.Read(td.LargeData)
+	if _, err := rand.Read(td.InvalidKey); err != nil {
+		panic("Failed to generate random key: " + err.Error())
+	}
+	if _, err := rand.Read(td.ValidSalt); err != nil {
+		panic("Failed to generate random salt: " + err.Error())
+	}
+	if _, err := rand.Read(td.LargeData); err != nil {
+		panic("Failed to generate random data: " + err.Error())
+	}
 
 	// WeakSalt is intentionally all zeros
 
