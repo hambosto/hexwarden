@@ -30,6 +30,17 @@ const (
 	Decryption
 )
 
+func (p Processing) String() string {
+	switch p {
+	case Encryption:
+		return "Encrypting..."
+	case Decryption:
+		return "Decrypting..."
+	default:
+		return "Processing..."
+	}
+}
+
 // CompressionLevel represents compression levels
 type CompressionLevel int
 

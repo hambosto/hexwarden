@@ -24,7 +24,7 @@ func NewEncryptor() *Encryptor {
 }
 
 // EncryptFile encrypts a file from source to destination
-func (e *Encryptor) EncryptFile(srcPath, destPath, password string, progressCallback func(int64)) error {
+func (e *Encryptor) EncryptFile(srcPath, destPath, password string) error {
 	// Open source file
 	srcFile, srcInfo, err := e.fileManager.OpenFile(srcPath)
 	if err != nil {
@@ -92,5 +92,5 @@ func (e *Encryptor) EncryptFile(srcPath, destPath, password string, progressCall
 	}
 
 	// Process the file
-	return processor.Process(srcFile, destFile, originalSize, progressCallback)
+	return processor.Process(srcFile, destFile, originalSize)
 }

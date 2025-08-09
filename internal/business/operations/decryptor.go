@@ -25,7 +25,7 @@ func NewDecryptor() *Decryptor {
 }
 
 // DecryptFile decrypts a file from source to destination
-func (d *Decryptor) DecryptFile(srcPath, destPath, password string, progressCallback func(int64)) error {
+func (d *Decryptor) DecryptFile(srcPath, destPath, password string) error {
 	// Open source file
 	srcFile, _, err := d.fileManager.OpenFile(srcPath)
 	if err != nil {
@@ -87,5 +87,5 @@ func (d *Decryptor) DecryptFile(srcPath, destPath, password string, progressCall
 	}
 
 	// Process the file (remaining data after header)
-	return processor.Process(srcFile, destFile, int64(originalSize), progressCallback)
+	return processor.Process(srcFile, destFile, int64(originalSize))
 }

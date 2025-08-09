@@ -9,7 +9,6 @@ import (
 	"github.com/hambosto/hexwarden/internal/business/operations"
 	"github.com/hambosto/hexwarden/internal/constants"
 	"github.com/hambosto/hexwarden/internal/data/files"
-	"github.com/hambosto/hexwarden/internal/presentation/ui"
 )
 
 // CLIProcessor handles CLI-based encryption and decryption operations
@@ -48,31 +47,12 @@ func (p *CLIProcessor) Encrypt(inputFile, outputFile, password string, deleteSou
 		}
 	}
 
-	// Get file info for progress tracking
-	fileInfo, err := p.fileManager.GetFileInfo(inputFile)
-	if err != nil {
-		return fmt.Errorf("failed to get file info: %w", err)
-	}
-
-	// Create progress bar
-	progressBar := ui.NewProgressBar(fileInfo.Size(), "Encrypting")
-	defer func() {
-		if err := progressBar.Finish(); err != nil {
-			// Log error but don't override the main error
-			_ = err // Explicitly ignore the close error to avoid overriding the main error
-		}
-	}()
-
 	fmt.Printf("Encrypting: %s -> %s\n", inputFile, outputFile)
 
 	// Perform encryption
-	err = p.encryptor.EncryptFile(inputFile, outputFile, password, progressBar.CreateCallback())
-	if err != nil {
+	if err := p.encryptor.EncryptFile(inputFile, outputFile, password); err != nil {
 		return fmt.Errorf("encryption failed: %w", err)
 	}
-
-	// Show final stats
-	progressBar.ShowFinalStats()
 
 	// Handle source file deletion if requested
 	if deleteSource {
@@ -104,31 +84,11 @@ func (p *CLIProcessor) Decrypt(inputFile, outputFile, password string, deleteSou
 		}
 	}
 
-	// Get file info for progress tracking
-	fileInfo, err := p.fileManager.GetFileInfo(inputFile)
-	if err != nil {
-		return fmt.Errorf("failed to get file info: %w", err)
-	}
-
-	// Create progress bar
-	progressBar := ui.NewProgressBar(fileInfo.Size(), "Decrypting")
-	defer func() {
-		if err := progressBar.Finish(); err != nil {
-			// Log error but don't override the main error
-			_ = err // Explicitly ignore the close error to avoid overriding the main error
-		}
-	}()
-
 	fmt.Printf("Decrypting: %s -> %s\n", inputFile, outputFile)
 
-	// Perform decryption
-	err = p.decryptor.DecryptFile(inputFile, outputFile, password, progressBar.CreateCallback())
-	if err != nil {
+	if err := p.decryptor.DecryptFile(inputFile, outputFile, password); err != nil {
 		return fmt.Errorf("decryption failed: %w", err)
 	}
-
-	// Show final stats
-	progressBar.ShowFinalStats()
 
 	// Handle source file deletion if requested
 	if deleteSource {

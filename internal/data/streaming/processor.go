@@ -11,11 +11,13 @@ import (
 
 	"github.com/hambosto/hexwarden/internal/constants"
 	"github.com/hambosto/hexwarden/internal/infrastructure"
+	"github.com/hambosto/hexwarden/internal/presentation/ui"
 )
 
 // StreamProcessor handles concurrent encryption/decryption streaming
 type StreamProcessor struct {
 	processor *infrastructure.Processor
+	bar       *ui.ProgressBar
 	config    StreamConfig
 	pool      *Pool
 
@@ -88,13 +90,14 @@ func (s *StreamProcessor) Cancel() {
 	s.cancel()
 }
 
-// Process processes data from input to output with progress tracking
-func (s *StreamProcessor) Process(input io.Reader, output io.Writer, totalSize int64, progressCallback func(int64)) error {
+// Process processes data from input to output
+func (s *StreamProcessor) Process(input io.Reader, output io.Writer, totalSize int64) error {
 	if input == nil || output == nil {
 		return constants.ErrNilStream
 	}
 
-	return s.runPipeline(input, output, totalSize, progressCallback)
+	s.bar = ui.NewProgressBar(totalSize, s.config.Processing.String())
+	return s.runPipeline(input, output)
 }
 
 // processTask processes a single task based on the operation type
@@ -111,7 +114,6 @@ func (s *StreamProcessor) processTask(task constants.Task) constants.TaskResult 
 		err = fmt.Errorf("unknown processing type: %d", s.config.Processing)
 	}
 
-	// Calculate size for progress tracking
 	size := s.calculateProgressSize(task.Data, output)
 
 	return constants.TaskResult{
@@ -131,18 +133,16 @@ func (s *StreamProcessor) calculateProgressSize(input, output []byte) int {
 }
 
 // runPipeline orchestrates the concurrent processing pipeline
-func (s *StreamProcessor) runPipeline(input io.Reader, output io.Writer, totalSize int64, progressCallback func(int64)) error {
+func (s *StreamProcessor) runPipeline(input io.Reader, output io.Writer) error {
 	// Initialize buffered channels for better throughput
 	s.taskChan = make(chan constants.Task, s.config.QueueSize)
 	s.resultChan = make(chan constants.TaskResult, s.config.QueueSize)
 
 	pipeline := &pipeline{
-		stream:           s,
-		input:            input,
-		output:           output,
-		totalSize:        totalSize,
-		progressCallback: progressCallback,
-		errChan:          make(chan error, 3), // Reader, workers, writer
+		stream:  s,
+		input:   input,
+		output:  output,
+		errChan: make(chan error, 3), // Reader, workers, writer
 	}
 
 	return pipeline.run()
@@ -150,12 +150,10 @@ func (s *StreamProcessor) runPipeline(input io.Reader, output io.Writer, totalSi
 
 // pipeline manages the concurrent processing stages
 type pipeline struct {
-	stream           *StreamProcessor
-	input            io.Reader
-	output           io.Writer
-	totalSize        int64
-	progressCallback func(int64)
-	errChan          chan error
+	stream  *StreamProcessor
+	input   io.Reader
+	output  io.Writer
+	errChan chan error
 }
 
 // run executes the pipeline stages concurrently
@@ -200,7 +198,7 @@ func (p *pipeline) runWorkers(wg *sync.WaitGroup) {
 func (p *pipeline) runWriter(wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	if err := p.stream.writeResults(p.output, p.progressCallback); err != nil {
+	if err := p.stream.writeResults(p.output); err != nil {
 		p.sendError(fmt.Errorf("writer error: %w", err))
 	}
 }
@@ -362,14 +360,14 @@ func (s *StreamProcessor) sendTask(task constants.Task) error {
 }
 
 // writeResults processes and writes results in order
-func (s *StreamProcessor) writeResults(writer io.Writer, progressCallback func(int64)) error {
+func (s *StreamProcessor) writeResults(writer io.Writer) error {
 	buffer := NewBuffer()
 
 	for {
 		select {
 		case result, ok := <-s.resultChan:
 			if !ok {
-				return s.flushRemainingResults(writer, buffer, progressCallback)
+				return s.flushRemainingResults(writer, buffer)
 			}
 
 			if result.Err != nil {
@@ -377,7 +375,7 @@ func (s *StreamProcessor) writeResults(writer io.Writer, progressCallback func(i
 			}
 
 			ready := buffer.Add(result)
-			if err := s.writeReadyResults(writer, ready, progressCallback); err != nil {
+			if err := s.writeReadyResults(writer, ready); err != nil {
 				return err
 			}
 
@@ -388,15 +386,15 @@ func (s *StreamProcessor) writeResults(writer io.Writer, progressCallback func(i
 }
 
 // flushRemainingResults writes any remaining buffered results
-func (s *StreamProcessor) flushRemainingResults(writer io.Writer, buffer *Buffer, progressCallback func(int64)) error {
+func (s *StreamProcessor) flushRemainingResults(writer io.Writer, buffer *Buffer) error {
 	remaining := buffer.Flush()
-	return s.writeReadyResults(writer, remaining, progressCallback)
+	return s.writeReadyResults(writer, remaining)
 }
 
 // writeReadyResults writes a slice of ready results
-func (s *StreamProcessor) writeReadyResults(writer io.Writer, results []constants.TaskResult, progressCallback func(int64)) error {
+func (s *StreamProcessor) writeReadyResults(writer io.Writer, results []constants.TaskResult) error {
 	for _, result := range results {
-		if err := s.writeResult(writer, result, progressCallback); err != nil {
+		if err := s.writeResult(writer, result); err != nil {
 			return err
 		}
 	}
@@ -404,7 +402,7 @@ func (s *StreamProcessor) writeReadyResults(writer io.Writer, results []constant
 }
 
 // writeResult writes a single result to the output
-func (s *StreamProcessor) writeResult(writer io.Writer, result constants.TaskResult, progressCallback func(int64)) error {
+func (s *StreamProcessor) writeResult(writer io.Writer, result constants.TaskResult) error {
 	// Write chunk size header for encryption
 	if s.config.Processing == constants.Encryption {
 		if err := s.writeChunkSize(writer, len(result.Data)); err != nil {
@@ -417,9 +415,9 @@ func (s *StreamProcessor) writeResult(writer io.Writer, result constants.TaskRes
 		return fmt.Errorf("writing chunk data: %w", err)
 	}
 
-	// Update progress
-	if progressCallback != nil {
-		progressCallback(int64(result.Size))
+	// Update progress bar
+	if err := s.bar.Add(int64(result.Size)); err != nil {
+		return fmt.Errorf("updating progress: %w", err)
 	}
 
 	return nil

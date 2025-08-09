@@ -166,29 +166,11 @@ func (a *InteractiveApp) encryptFile(srcPath, destPath string) error {
 		return fmt.Errorf("password prompt failed: %w", err)
 	}
 
-	// Get file info for progress tracking
-	fileInfo, err := a.fileManager.GetFileInfo(srcPath)
-	if err != nil {
-		return fmt.Errorf("failed to get file info: %w", err)
-	}
-
-	// Create progress bar
-	progressBar := ui.NewProgressBar(fileInfo.Size(), "Encrypting")
-	defer func() {
-		if err := progressBar.Finish(); err != nil {
-			// Log error but don't override the main error
-			_ = err // Explicitly ignore the close error to avoid overriding the main error
-		}
-	}()
-
 	// Perform encryption
-	err = a.encryptor.EncryptFile(srcPath, destPath, password, progressBar.CreateCallback())
-	if err != nil {
+	if err := a.encryptor.EncryptFile(srcPath, destPath, password); err != nil {
 		return fmt.Errorf("encryption failed: %w", err)
 	}
 
-	// Show final stats
-	progressBar.ShowFinalStats()
 	return nil
 }
 
@@ -200,29 +182,11 @@ func (a *InteractiveApp) decryptFile(srcPath, destPath string) error {
 		return fmt.Errorf("password prompt failed: %w", err)
 	}
 
-	// Get file info for progress tracking
-	fileInfo, err := a.fileManager.GetFileInfo(srcPath)
-	if err != nil {
-		return fmt.Errorf("failed to get file info: %w", err)
-	}
-
-	// Create progress bar
-	progressBar := ui.NewProgressBar(fileInfo.Size(), "Decrypting")
-	defer func() {
-		if err := progressBar.Finish(); err != nil {
-			// Log error but don't override the main error
-			_ = err // Explicitly ignore the close error to avoid overriding the main error
-		}
-	}()
-
 	// Perform decryption
-	err = a.decryptor.DecryptFile(srcPath, destPath, password, progressBar.CreateCallback())
-	if err != nil {
+	if err := a.decryptor.DecryptFile(srcPath, destPath, password); err != nil {
 		return fmt.Errorf("decryption failed: %w", err)
 	}
 
-	// Show final stats
-	progressBar.ShowFinalStats()
 	return nil
 }
 
