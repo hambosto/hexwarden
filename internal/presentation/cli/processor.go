@@ -6,9 +6,9 @@ import (
 
 	"golang.org/x/term"
 
-	"github.com/hambosto/hexwarden/internal/business/operations"
 	"github.com/hambosto/hexwarden/internal/constants"
 	"github.com/hambosto/hexwarden/internal/data/files"
+	"github.com/hambosto/hexwarden/internal/usecase/operations"
 )
 
 // CLIProcessor handles CLI-based encryption and decryption operations

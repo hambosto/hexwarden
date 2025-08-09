@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/hambosto/hexwarden/internal/business/operations"
 	"github.com/hambosto/hexwarden/internal/constants"
 	"github.com/hambosto/hexwarden/internal/data/files"
 	"github.com/hambosto/hexwarden/internal/presentation/ui"
+	"github.com/hambosto/hexwarden/internal/usecase/operations"
 )
 
 // InteractiveApp encapsulates the main interactive application
