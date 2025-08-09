@@ -107,12 +107,7 @@ func (m *Manager) secureDelete(path string) error {
 	if err != nil {
 		return fmt.Errorf("%w: failed to open file for secure deletion: %v", constants.ErrSecureDeleteFailed, err)
 	}
-	defer func() {
-		if err := file.Close(); err != nil {
-			// Log error but don't override the main error
-			_ = err // Explicitly ignore the close error to avoid overriding the main error
-		}
-	}()
+	defer file.Close() //nolint:errcheck
 
 	info, err := file.Stat()
 	if err != nil {
