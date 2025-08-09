@@ -14,6 +14,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          # Fetch full git history to avoid VCS issues
+          fetch-depth: 0
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -38,20 +41,23 @@ jobs:
       - name: Run tests
         run: |
           echo "Running tests with shorter timeout and verbose output..."
-          go test -timeout=2m -v -race ./tests/compression/...
-          go test -timeout=2m -v -race ./tests/crypto/...
-          go test -timeout=2m -v -race ./tests/data/...
-          go test -timeout=2m -v -race ./tests/utils/...
-          go test -timeout=2m -v -race ./tests/encoding/...
+          go test -buildvcs=false -timeout=2m -v -race ./tests/compression/...
+          go test -buildvcs=false -timeout=2m -v -race ./tests/crypto/...
+          go test -buildvcs=false -timeout=2m -v -race ./tests/data/...
+          go test -buildvcs=false -timeout=2m -v -race ./tests/utils/...
+          go test -buildvcs=false -timeout=2m -v -race ./tests/encoding/...
           echo "All test packages completed successfully"
 
       - name: Run Security Scanner (gosec)
         uses: securego/gosec@master
         with:
-          args: '-exclude-dir=.git -exclude-dir=vendor -buildvcs=false ./...'
+          args: '-exclude-dir=.git -exclude-dir=vendor ./...'
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
           version: latest
-          args: --timeout=3m
+          args: --timeout=3m --build-tags=""
+        env:
+          # Disable VCS stamping for golangci-lint as well
+          GOFLAGS: "-buildvcs=false"
