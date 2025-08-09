@@ -10,6 +10,7 @@ jobs:
   test:
     name: Test and Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -35,15 +36,15 @@ jobs:
           fi
 
       - name: Run tests
-        run: go test -v -race ./tests/...
+        run: go test -timeout=5m -race ./tests/...
 
       - name: Run Security Scanner (gosec)
         uses: securego/gosec@master
         with:
-          args: '-exclude-dir=.git -exclude-dir=vendor ./...'
+          args: '-exclude-dir=.git -exclude-dir=vendor -timeout=3m ./...'
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
           version: latest
-          args: --timeout=5m
+          args: --timeout=3m
