@@ -7,7 +7,7 @@
   </p>
 </div>
 
-**Hexwarden** is a completely refactored command-line file encryption tool that makes secure file protection simple and reliable. Built with a clean layered architecture, it uses strong encryption algorithms and maintains high performance through concurrent processing.
+**Hexwarden** is a command-line file encryption tool that makes secure file protection simple and reliable. Built with a clean layered architecture, it uses strong encryption algorithms and maintains high performance through concurrent processing.
 
 ## 🚀 What's New
 
