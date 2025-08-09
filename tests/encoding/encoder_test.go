@@ -370,7 +370,7 @@ func TestEncoder_ErrorRecovery(t *testing.T) {
 
 		// Corrupt the first shard completely
 		shardSize := len(encoded) / (4 + 6) // total shards
-		for i := 0; i < shardSize; i++ {
+		for i := range shardSize {
 			corrupted[i] = 0xFF
 		}
 
@@ -434,8 +434,7 @@ func BenchmarkEncoder_Encode(b *testing.B) {
 
 	testData := createRepetitiveData(100) // Reduced from 1000 to 100 bytes
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, err := encoder.Encode(testData)
 		if err != nil {
 			b.Fatal(err)
@@ -456,8 +455,7 @@ func BenchmarkEncoder_Decode(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, err := encoder.Decode(encoded)
 		if err != nil {
 			b.Fatal(err)
@@ -474,8 +472,7 @@ func BenchmarkEncoder_RoundTrip(b *testing.B) {
 
 	testData := createRepetitiveData(100) // Reduced from 1000 to 100 bytes
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		encoded, err := encoder.Encode(testData)
 		if err != nil {
 			b.Fatal(err)
@@ -493,7 +490,7 @@ func createRepetitiveData(size int) []byte {
 	pattern := []byte("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 	data := make([]byte, size)
 
-	for i := 0; i < size; i++ {
+	for i := range size {
 		data[i] = pattern[i%len(pattern)]
 	}
 

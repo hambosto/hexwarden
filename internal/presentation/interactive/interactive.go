@@ -176,8 +176,7 @@ func (a *InteractiveApp) encryptFile(srcPath, destPath string) error {
 	progressBar := ui.NewProgressBar(fileInfo.Size(), "Encrypting")
 	defer func() {
 		if err := progressBar.Finish(); err != nil {
-			// Log close error but don't override the main error
-			// In a production environment, this would be logged properly
+			// Log error but don't override the main error
 			_ = err // Explicitly ignore the close error to avoid overriding the main error
 		}
 	}()
@@ -211,8 +210,7 @@ func (a *InteractiveApp) decryptFile(srcPath, destPath string) error {
 	progressBar := ui.NewProgressBar(fileInfo.Size(), "Decrypting")
 	defer func() {
 		if err := progressBar.Finish(); err != nil {
-			// Log close error but don't override the main error
-			// In a production environment, this would be logged properly
+			// Log error but don't override the main error
 			_ = err // Explicitly ignore the close error to avoid overriding the main error
 		}
 	}()

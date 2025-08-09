@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/hambosto/hexwarden/internal/constants"
@@ -70,13 +71,7 @@ func TestFinder_FindEligibleFiles(t *testing.T) {
 
 		// Check that all expected files are found
 		for _, expected := range expectedFiles {
-			found := false
-			for _, actual := range eligibleFiles {
-				if actual == expected {
-					found = true
-					break
-				}
-			}
+			found := slices.Contains(eligibleFiles, expected)
 			if !found {
 				t.Errorf("Expected file %s not found in eligible files", expected)
 			}
@@ -100,13 +95,7 @@ func TestFinder_FindEligibleFiles(t *testing.T) {
 
 		// Check that all expected files are found
 		for _, expected := range expectedFiles {
-			found := false
-			for _, actual := range eligibleFiles {
-				if actual == expected {
-					found = true
-					break
-				}
-			}
+			found := slices.Contains(eligibleFiles, expected)
 			if !found {
 				t.Errorf("Expected file %s not found in eligible files", expected)
 			}
@@ -383,13 +372,7 @@ func TestFinder_NestedDirectories(t *testing.T) {
 
 		// Check that all expected files are found
 		for _, expected := range expectedFiles {
-			found := false
-			for _, actual := range eligibleFiles {
-				if actual == expected {
-					found = true
-					break
-				}
-			}
+			found := slices.Contains(eligibleFiles, expected)
 			if !found {
 				t.Errorf("Expected file %s not found in eligible files", expected)
 			}
@@ -420,6 +403,7 @@ func BenchmarkFinder_FindEligibleFiles(b *testing.B) {
 	defer func() {
 		if err := os.Chdir(originalDir); err != nil {
 			// Log error but don't fail benchmark
+			_ = err
 		}
 	}()
 	if err := os.Chdir(tmpDir); err != nil {
@@ -428,7 +412,7 @@ func BenchmarkFinder_FindEligibleFiles(b *testing.B) {
 
 	// Create many test files
 	testFiles := make(map[string][]byte)
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		testFiles[fmt.Sprintf("file%d.txt", i)] = []byte("test content")
 		if i%10 == 0 {
 			testFiles[fmt.Sprintf("encrypted%d.txt%s", i, constants.FileExtension)] = []byte("encrypted")
@@ -439,8 +423,7 @@ func BenchmarkFinder_FindEligibleFiles(b *testing.B) {
 
 	finder := files.NewFinder()
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, err := finder.FindEligibleFiles(constants.ModeEncrypt)
 		if err != nil {
 			b.Fatal(err)

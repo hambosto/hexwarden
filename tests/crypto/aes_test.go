@@ -274,14 +274,14 @@ func TestAESCipher_NonceUniqueness(t *testing.T) {
 
 	// Encrypt the same data multiple times
 	ciphertexts := make([][]byte, 10)
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		ciphertext, err := cipher.Encrypt(testData.TestData)
 		helpers.AssertNoError(t, err)
 		ciphertexts[i] = ciphertext
 	}
 
 	// All ciphertexts should be different (due to random nonces)
-	for i := 0; i < len(ciphertexts); i++ {
+	for i := range ciphertexts {
 		for j := i + 1; j < len(ciphertexts); j++ {
 			helpers.AssertBytesNotEqual(t, ciphertexts[i], ciphertexts[j])
 		}
@@ -345,8 +345,7 @@ func BenchmarkAESCipher_Encrypt(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, err := cipher.Encrypt(testData.TestData)
 		if err != nil {
 			b.Fatal(err)
@@ -368,8 +367,7 @@ func BenchmarkAESCipher_Decrypt(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, err := cipher.Decrypt(ciphertext)
 		if err != nil {
 			b.Fatal(err)

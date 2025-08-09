@@ -352,14 +352,14 @@ func TestHeader_NonceUniqueness(t *testing.T) {
 
 	// Create multiple headers with same inputs
 	headers := make([]*crypto.Header, 10)
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		header, err := crypto.NewHeader(testData.ValidSalt, 1024, testData.ValidKey32)
 		helpers.AssertNoError(t, err)
 		headers[i] = header
 	}
 
 	// All nonces should be different
-	for i := 0; i < len(headers); i++ {
+	for i := range headers {
 		for j := i + 1; j < len(headers); j++ {
 			helpers.AssertBytesNotEqual(t, headers[i].Nonce(), headers[j].Nonce())
 		}
@@ -400,8 +400,7 @@ func TestHeader_DifferentKeysProduceDifferentHeaders(t *testing.T) {
 func BenchmarkNewHeader(b *testing.B) {
 	testData := helpers.NewTestData()
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, err := crypto.NewHeader(testData.ValidSalt, 1024, testData.ValidKey32)
 		if err != nil {
 			b.Fatal(err)
@@ -417,8 +416,7 @@ func BenchmarkHeader_Write(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		var buf bytes.Buffer
 		err := header.Write(&buf)
 		if err != nil {
@@ -442,8 +440,7 @@ func BenchmarkReadHeader(b *testing.B) {
 	}
 	headerData := buf.Bytes()
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		buf := bytes.NewReader(headerData)
 		_, err := crypto.ReadHeader(buf)
 		if err != nil {
@@ -484,6 +481,7 @@ func createCorruptedChecksumHeader() []byte {
 	var buf bytes.Buffer
 	if err := header.Write(&buf); err != nil {
 		// Handle error but don't fail test setup
+		_ = err
 	}
 	data := buf.Bytes()
 
@@ -499,6 +497,7 @@ func createTamperedHeader() []byte {
 	var buf bytes.Buffer
 	if err := header.Write(&buf); err != nil {
 		// Handle error but don't fail test setup
+		_ = err
 	}
 	data := buf.Bytes()
 

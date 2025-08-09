@@ -110,7 +110,6 @@ func (m *Manager) secureDelete(path string) error {
 	defer func() {
 		if err := file.Close(); err != nil {
 			// Log error but don't override the main error
-			// In a production environment, this would be logged properly
 			_ = err // Explicitly ignore the close error to avoid overriding the main error
 		}
 	}()

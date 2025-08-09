@@ -103,7 +103,7 @@ func TestDeriveKey_Deterministic(t *testing.T) {
 
 	// Derive the same key multiple times
 	keys := make([][]byte, 5)
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		key, err := crypto.DeriveKey(password, salt)
 		helpers.AssertNoError(t, err)
 		keys[i] = key
@@ -135,7 +135,7 @@ func TestDeriveKey_DifferentPasswords(t *testing.T) {
 	}
 
 	// All keys should be different
-	for i := 0; i < len(keys); i++ {
+	for i := range keys {
 		for j := i + 1; j < len(keys); j++ {
 			helpers.AssertBytesNotEqual(t, keys[i], keys[j])
 		}
@@ -148,7 +148,7 @@ func TestDeriveKey_DifferentSalts(t *testing.T) {
 
 	// Generate different salts
 	salts := make([][]byte, 5)
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		salt, err := crypto.GenerateSalt()
 		helpers.AssertNoError(t, err)
 		salts[i] = salt
@@ -163,7 +163,7 @@ func TestDeriveKey_DifferentSalts(t *testing.T) {
 	}
 
 	// All keys should be different
-	for i := 0; i < len(keys); i++ {
+	for i := range keys {
 		for j := i + 1; j < len(keys); j++ {
 			helpers.AssertBytesNotEqual(t, keys[i], keys[j])
 		}
@@ -173,7 +173,7 @@ func TestDeriveKey_DifferentSalts(t *testing.T) {
 func TestGenerateSalt(t *testing.T) {
 	// Generate multiple salts
 	salts := make([][]byte, 10)
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		salt, err := crypto.GenerateSalt()
 		helpers.AssertNoError(t, err)
 		salts[i] = salt
@@ -195,7 +195,7 @@ func TestGenerateSalt(t *testing.T) {
 	}
 
 	// All salts should be different (extremely high probability)
-	for i := 0; i < len(salts); i++ {
+	for i := range salts {
 		for j := i + 1; j < len(salts); j++ {
 			helpers.AssertBytesNotEqual(t, salts[i], salts[j])
 		}
@@ -263,7 +263,7 @@ func TestValidateSalt(t *testing.T) {
 func TestValidateSalt_GeneratedSaltsAreValid(t *testing.T) {
 	// Generate multiple salts and ensure they all pass validation
 	// Reduced from 100 to 10 iterations to reduce resource usage
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		salt, err := crypto.GenerateSalt()
 		helpers.AssertNoError(t, err)
 
@@ -313,8 +313,7 @@ func BenchmarkDeriveKey(b *testing.B) {
 	password := []byte(testData.TestPassword)
 	salt := testData.ValidSalt
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, err := crypto.DeriveKey(password, salt)
 		if err != nil {
 			b.Fatal(err)
@@ -324,8 +323,7 @@ func BenchmarkDeriveKey(b *testing.B) {
 
 // BenchmarkGenerateSalt benchmarks salt generation performance
 func BenchmarkGenerateSalt(b *testing.B) {
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, err := crypto.GenerateSalt()
 		if err != nil {
 			b.Fatal(err)
@@ -338,8 +336,7 @@ func BenchmarkValidateSalt(b *testing.B) {
 	testData := helpers.NewTestData()
 	salt := testData.ValidSalt
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		err := crypto.ValidateSalt(salt)
 		if err != nil {
 			b.Fatal(err)

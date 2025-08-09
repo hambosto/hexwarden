@@ -338,8 +338,7 @@ func BenchmarkCompressor_Compress(b *testing.B) {
 
 	testData := createRepetitiveData(100) // Reduced from 1000 to 100 bytes
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, err := compressor.Compress(testData)
 		if err != nil {
 			b.Fatal(err)
@@ -360,8 +359,7 @@ func BenchmarkCompressor_Decompress(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, err := compressor.Decompress(compressed)
 		if err != nil {
 			b.Fatal(err)
@@ -378,8 +376,7 @@ func BenchmarkCompressor_RoundTrip(b *testing.B) {
 
 	testData := createRepetitiveData(100) // Reduced from 1000 to 100 bytes
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		compressed, err := compressor.Compress(testData)
 		if err != nil {
 			b.Fatal(err)
@@ -406,7 +403,7 @@ func createRepetitiveData(size int) []byte {
 
 func createBinaryData(size int) []byte {
 	data := make([]byte, size)
-	for i := 0; i < size; i++ {
+	for i := range size {
 		data[i] = byte(i % 256)
 	}
 	return data
