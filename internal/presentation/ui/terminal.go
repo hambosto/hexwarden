@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 
+	"github.com/hambosto/hexwarden/internal/constants"
 	"github.com/inancgumus/screen"
 )
 
@@ -36,7 +37,7 @@ func (t *Terminal) SetTitle(title string) {
 
 // PrintBanner prints the application banner
 func (t *Terminal) PrintBanner() {
-	banner := `
+	banner := fmt.Sprintf(`
 ██╗  ██╗███████╗██╗  ██╗██╗    ██╗ █████╗ ██████╗ ██████╗ ███████╗███╗   ██╗
 ██║  ██║██╔════╝╚██╗██╔╝██║    ██║██╔══██╗██╔══██╗██╔══██╗██╔════╝████╗  ██║
 ███████║█████╗   ╚███╔╝ ██║ █╗ ██║███████║██████╔╝██║  ██║█████╗  ██╔██╗ ██║
@@ -44,8 +45,8 @@ func (t *Terminal) PrintBanner() {
 ██║  ██║███████╗██╔╝ ██╗╚███╔███╔╝██║  ██║██║  ██║██████╔╝███████╗██║ ╚████║
 ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝ ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚══════╝╚═╝  ╚═══╝
                                                                               
-                    Secure File Encryption Tool v1.1.0
-`
+                    Secure File Encryption Tool v%s
+`, constants.AppVersion)
 	fmt.Println(banner)
 }
 

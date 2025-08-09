@@ -3,7 +3,7 @@ package constants
 // Application Configuration
 const (
 	AppName       = "hexwarden"
-	AppVersion    = "1.0"
+	AppVersion    = "1.1"
 	FileExtension = ".hex"
 )
 
